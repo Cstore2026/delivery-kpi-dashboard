@@ -625,6 +625,107 @@
 const MAX_P = 22, MAX_L = 28;
 const MONTHLY_PREPARER_MAX = 660;
 const MONTHLY_LEADER_MAX = 840;
+const SUPABASE_URL = "https://hgybmvcnwdsacskwwzvj.supabase.co";
+const SUPABASE_KEY = "sb_publishable_bEnd7r_X_3OythYvVD7iHQ_zxrQ_BkL";
+const CLOUD_ROW_KEY = "app_state";
+const CLOUD_STORAGE_KEYS = [
+  "kpi_users_v1",
+  "kpi_branch_by_leader_v1",
+  "kpi_leader_internal_names_v1",
+  "kpi_hidden_branches_v1",
+  "kpi_preparers_v3",
+  "kpi_leaders_v3",
+  "kpi_preparer_names_v1",
+  "kpi_activity_log_v1",
+  "kpi_transfer_log_v1"
+];
+let CLOUD_READY = false;
+let CLOUD_SAVE_TIMER = null;
+let CLOUD_LAST_SYNC = "";
+function cloudHeaders(extra={}){
+  return Object.assign({
+    "apikey": SUPABASE_KEY,
+    "Authorization": "Bearer " + SUPABASE_KEY,
+    "Content-Type": "application/json"
+  }, extra);
+}
+function collectCloudState(){
+  const out = {};
+  CLOUD_STORAGE_KEYS.forEach(k => out[k] = localStorage.getItem(k));
+  return out;
+}
+function applyCloudState(state){
+  if(!state || typeof state !== "object") return false;
+  CLOUD_STORAGE_KEYS.forEach(k => {
+    if(Object.prototype.hasOwnProperty.call(state,k) && state[k] !== null && typeof state[k] !== "undefined"){
+      localStorage.setItem(k, String(state[k]));
+    }
+  });
+  return true;
+}
+async function loadCloudState(){
+  try{
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/kpi_store?key=eq.${encodeURIComponent(CLOUD_ROW_KEY)}&select=value`, {
+      headers: cloudHeaders({"Accept":"application/json"})
+    });
+    if(!res.ok) throw new Error(await res.text());
+    const rows = await res.json();
+    if(rows && rows[0] && rows[0].value){
+      const remoteState = JSON.parse(rows[0].value);
+      applyCloudState(remoteState);
+      CLOUD_LAST_SYNC = rows[0].value;
+      return true;
+    }
+  }catch(err){
+    console.warn("Supabase load failed", err);
+  }
+  return false;
+}
+async function saveCloudStateNow(){
+  if(!CLOUD_READY) return;
+  try{
+    const value = JSON.stringify(collectCloudState());
+    if(value === CLOUD_LAST_SYNC) return;
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/kpi_store?on_conflict=key`, {
+      method: "POST",
+      headers: cloudHeaders({"Prefer":"resolution=merge-duplicates"}),
+      body: JSON.stringify({key:CLOUD_ROW_KEY, value})
+    });
+    if(!res.ok) throw new Error(await res.text());
+    CLOUD_LAST_SYNC = value;
+  }catch(err){
+    console.warn("Supabase save failed", err);
+    alert("تعذر حفظ البيانات أونلاين مؤقتًا. سيتم الاحتفاظ بها على هذا الجهاز لحين المحاولة مرة أخرى.");
+  }
+}
+function scheduleCloudSave(){
+  if(!CLOUD_READY) return;
+  clearTimeout(CLOUD_SAVE_TIMER);
+  CLOUD_SAVE_TIMER = setTimeout(saveCloudStateNow, 600);
+}
+function reloadStateFromLocalStorage(){
+  USERS = JSON.parse(localStorage.getItem("kpi_users_v1") || "null") || structuredClone(DEFAULT_USERS);
+  if(USERS["admin"]) delete USERS["admin"];
+  Object.keys(USERS || {}).forEach(u => ensureTeamLeaderPermissions(u));
+  BRANCH_BY_LEADER = JSON.parse(localStorage.getItem("kpi_branch_by_leader_v1") || "null") || structuredClone(DEFAULT_BRANCH_BY_LEADER);
+  LEADER_INTERNAL_NAMES = JSON.parse(localStorage.getItem("kpi_leader_internal_names_v1") || "{}");
+  HIDDEN_BRANCHES = JSON.parse(localStorage.getItem("kpi_hidden_branches_v1") || "[]");
+  preparers = JSON.parse(localStorage.getItem("kpi_preparers_v3") || "[]");
+  leaders = JSON.parse(localStorage.getItem("kpi_leaders_v3") || "[]");
+  preparerNames = JSON.parse(localStorage.getItem("kpi_preparer_names_v1") || "{}");
+  activityLog = JSON.parse(localStorage.getItem("kpi_activity_log_v1") || "[]");
+  transferLog = JSON.parse(localStorage.getItem("kpi_transfer_log_v1") || "[]");
+  Object.keys(USERS).filter(u => USERS[u].role === "teamleader").forEach(name => {
+    if(!preparerNames[name]) preparerNames[name] = [];
+  });
+}
+async function initCloudStorage(){
+  const hasRemote = await loadCloudState();
+  if(hasRemote) reloadStateFromLocalStorage();
+  CLOUD_READY = true;
+  if(!hasRemote) scheduleCloudSave();
+}
+
 const DEFAULT_USERS = {
   "تيم ليدر عباس": {pass:"1234", role:"teamleader", display:"تيم ليدر عباس"},
   "تيم ليدر تريومف": {pass:"1234", role:"teamleader", display:"تيم ليدر تريومف"},
@@ -653,6 +754,7 @@ saveUsers();
 
 function saveUsers(){
   localStorage.setItem("kpi_users_v1", JSON.stringify(USERS));
+  scheduleCloudSave();
 }
 
 const DEFAULT_BRANCH_BY_LEADER = {
@@ -669,9 +771,11 @@ let HIDDEN_BRANCHES = JSON.parse(localStorage.getItem("kpi_hidden_branches_v1") 
 
 function saveBranches(){
   localStorage.setItem("kpi_branch_by_leader_v1", JSON.stringify(BRANCH_BY_LEADER));
+  scheduleCloudSave();
 }
 function saveHiddenBranches(){
   localStorage.setItem("kpi_hidden_branches_v1", JSON.stringify(HIDDEN_BRANCHES));
+  scheduleCloudSave();
 }
 function unhideBranch(branch){
   branch = String(branch || '').trim();
@@ -683,6 +787,7 @@ function unhideBranch(branch){
 
 function saveLeaderInternalNames(){
   localStorage.setItem("kpi_leader_internal_names_v1", JSON.stringify(LEADER_INTERNAL_NAMES));
+  scheduleCloudSave();
 }
 
 function getBranchFromLeader(leaderName){
@@ -742,6 +847,7 @@ function save(){
   localStorage.setItem("kpi_preparer_names_v1",JSON.stringify(preparerNames));
   localStorage.setItem("kpi_activity_log_v1",JSON.stringify(activityLog));
   localStorage.setItem("kpi_transfer_log_v1",JSON.stringify(transferLog));
+  scheduleCloudSave();
 }
 
 function addActivity(action, details){
@@ -755,6 +861,7 @@ function addActivity(action, details){
   });
   activityLog = activityLog.slice(0, 1000);
   localStorage.setItem("kpi_activity_log_v1", JSON.stringify(activityLog));
+  scheduleCloudSave();
 }
 function num(v){return Number(v||0)}
 function monthOf(d){return (d||"").slice(0,7)}
@@ -2370,18 +2477,22 @@ $("exportBtn").onclick=()=>{
   const blob=new Blob(["\uFEFF"+lines.join("\n")],{type:"text/csv;charset=utf-8"});
   const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="delivery-kpi-data.csv";a.click();
 };
-renderLoginUsers();
-renderTeamLeaderControls();
-renderInternalLeaderControls();
-renderTransferControls();
-renderTransferLog();
-updatePreparerNameOptions();
-renderPreparerNamesList();
-renderSettingsPreparersList();
-renderPasswordUsers();
-renderLoginUsersManagement();
-renderBranchesManagement();
-calcPScores(); calcLScores();
+async function startApp(){
+  await initCloudStorage();
+  renderLoginUsers();
+  renderTeamLeaderControls();
+  renderInternalLeaderControls();
+  renderTransferControls();
+  renderTransferLog();
+  updatePreparerNameOptions();
+  renderPreparerNamesList();
+  renderSettingsPreparersList();
+  renderPasswordUsers();
+  renderLoginUsersManagement();
+  renderBranchesManagement();
+  calcPScores(); calcLScores();
+}
+startApp();
 </script>
 </body>
 </html>

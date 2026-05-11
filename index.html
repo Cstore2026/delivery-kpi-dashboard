@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>KPI Dashboard - Delivery Team V55</title>
+  <title>KPI Dashboard - Delivery Team V55.14 Smart Person Report</title>
   <style>
     :root{
       --bg:#fff7fb; --card:#ffffff; --text:#3f1834; --muted:#8b5f78;
@@ -71,6 +71,11 @@
     .hidden{display:none!important}.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
     .empty{text-align:center;color:var(--muted);border:1px dashed var(--border);border-radius:14px;padding:24px;background:#fff3f8}
     .role-note{background:#fde5ef;color:#8e1141;border:1px solid #efbfd3;padding:10px 12px;border-radius:14px;font-weight:800}
+    .notes-summary-title{list-style:none;cursor:pointer;background:#fff;border:1px solid var(--border);border-radius:14px;padding:12px 14px;font-weight:900;color:var(--dark);box-shadow:var(--shadow)}
+    .notes-summary-title::-webkit-details-marker{display:none}
+    .notes-summary-title:after{content:"عرض / إخفاء";float:left;color:var(--muted);font-size:12px;font-weight:800}
+    details[open] .notes-summary-title{background:#fde5ef}
+
 
     .login-logo-wrap{text-align:center;margin-bottom:14px}
     .login-logo{
@@ -84,6 +89,80 @@
       border:1px solid var(--border);
       box-shadow:0 10px 24px rgba(194,24,91,.20);
     }
+
+    .exec-chart-card{
+      background:#fff;border:1px solid var(--border);border-radius:16px;padding:12px;box-shadow:0 8px 20px rgba(15,23,42,.04)
+    }
+    .exec-chart-title{font-weight:900;color:var(--dark);margin:0 0 10px;font-size:14px}
+    .chart-empty{border:1px dashed var(--border);background:#fff3f8;border-radius:14px;padding:18px;text-align:center;color:var(--muted)}
+    .progress-row,.branch-chart-row,.low-chart-row{margin-bottom:12px;padding-bottom:10px;border-bottom:1px dashed #f2bfd2}
+    .progress-row:last-child,.branch-chart-row:last-child,.low-chart-row:last-child{border-bottom:0;margin-bottom:0;padding-bottom:0}
+    .chart-line-head{display:flex;justify-content:space-between;gap:8px;align-items:center;font-size:12px;font-weight:800;color:var(--text);margin-bottom:6px}
+    .chart-meta{color:var(--muted);font-size:11px;font-weight:700;white-space:nowrap}
+    .chart-track{height:12px;background:#fff0f6;border:1px solid var(--border);border-radius:999px;overflow:hidden;position:relative}
+    .chart-fill{height:100%;border-radius:999px;background:linear-gradient(90deg,#c2185b,#8e1141);min-width:3px}
+    .chart-fill.good{background:linear-gradient(90deg,#16a34a,#15803d)}
+    .chart-fill.mid{background:linear-gradient(90deg,#f59e0b,#d97706)}
+    .chart-fill.bad{background:linear-gradient(90deg,#d81b60,#8e1141)}
+    .branch-bars{display:grid;grid-template-columns:1fr;gap:6px}
+    .mini-bar{display:grid;grid-template-columns:72px 1fr 42px;gap:8px;align-items:center;font-size:11px;color:var(--muted);font-weight:800}
+    .mini-track{height:9px;background:#fff0f6;border-radius:999px;overflow:hidden;border:1px solid var(--border)}
+    .mini-fill{height:100%;border-radius:999px;background:linear-gradient(90deg,#c2185b,#8e1141);min-width:2px}
+    .mini-fill.soft{background:linear-gradient(90deg,#f7c5da,#c2185b)}
+    .mini-fill.avg{background:linear-gradient(90deg,#8e1141,#3f1834)}
+    .low-name{display:flex;justify-content:space-between;gap:8px;align-items:center;margin-bottom:6px;font-size:12px;font-weight:900}
+    .low-sub{color:var(--muted);font-size:11px;font-weight:700}
+
+    .donut-wrap{display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap;min-height:150px}
+    .donut{width:132px;height:132px;border-radius:50%;background:conic-gradient(var(--primary) calc(var(--pct)*1%), #fff0f6 0);display:grid;place-items:center;border:1px solid var(--border);box-shadow:inset 0 0 0 10px #fff}
+    .donut-inner{width:82px;height:82px;border-radius:50%;background:#fff;display:grid;place-items:center;text-align:center;border:1px solid var(--border);font-weight:900;color:var(--dark)}
+    .donut-inner span{display:block;font-size:22px;line-height:1}
+    .donut-inner small{display:block;font-size:11px;color:var(--muted);margin-top:4px}
+    .donut-legend{display:grid;gap:7px;font-size:12px;font-weight:800;color:var(--muted)}
+    .branch-circles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+    .branch-circle-card{border:1px solid var(--border);background:#fff8fb;border-radius:14px;padding:10px;text-align:center}
+    .mini-donut{--size:74px;width:var(--size);height:var(--size);border-radius:50%;margin:0 auto 7px;background:conic-gradient(var(--primary) calc(var(--pct)*1%), #fff0f6 0);display:grid;place-items:center;border:1px solid var(--border);box-shadow:inset 0 0 0 7px #fff}
+    .mini-donut span{width:46px;height:46px;border-radius:50%;background:#fff;display:grid;place-items:center;font-weight:900;color:var(--dark);font-size:13px;border:1px solid var(--border)}
+    .branch-circle-name{font-size:12px;font-weight:900;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .branch-circle-sub{font-size:11px;color:var(--muted);font-weight:800;margin-top:3px}
+    @media print{
+      .exec-chart-card{box-shadow:none;break-inside:avoid}
+      .chart-track,.mini-track{print-color-adjust:exact;-webkit-print-color-adjust:exact}
+    }
+
+
+
+    .smart-report-box{margin-top:22px;border:1px solid var(--border);border-radius:18px;background:#fff;padding:16px;box-shadow:0 8px 20px rgba(15,23,42,.04)}
+    .smart-report-head{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+    .smart-report-head h3{margin:0;color:var(--dark)}
+    .smart-muted{color:var(--muted);font-size:12px;font-weight:800;line-height:1.7}
+    .smart-summary{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin:12px 0}
+    .smart-mini-card{background:#fff7fb;border:1px solid var(--border);border-radius:14px;padding:10px;text-align:center}
+    .smart-mini-card b{display:block;font-size:18px;margin-top:4px;color:var(--dark)}
+    .smart-mini-card span{font-size:11px;color:var(--muted);font-weight:900}
+    .smart-visuals{display:grid;grid-template-columns:1.2fr .8fr;gap:14px;margin-top:12px}
+    .criteria-bars{border:1px solid var(--border);border-radius:16px;background:#fff;padding:12px}
+    .criteria-bar-row{display:grid;grid-template-columns:150px 1fr 48px;gap:10px;align-items:center;margin-bottom:9px;font-size:12px;font-weight:800}
+    .criteria-bar-row:last-child{margin-bottom:0}
+    .criteria-bar-label{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text)}
+    .criteria-bar-track{height:13px;background:#fff0f6;border:1px solid var(--border);border-radius:999px;overflow:hidden}
+    .criteria-bar-fill{height:100%;background:linear-gradient(90deg,#c2185b,#8e1141);border-radius:999px;min-width:3px}
+    .smart-gauges{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+    .gauge-card{border:1px solid var(--border);border-radius:16px;background:#fff8fb;padding:10px;text-align:center;min-height:120px}
+    .gauge-title{font-size:12px;font-weight:900;color:var(--dark);margin-bottom:6px;min-height:34px;display:flex;align-items:center;justify-content:center;text-align:center}
+    .semi-gauge{width:118px;height:62px;margin:0 auto;position:relative;overflow:hidden}
+    .semi-gauge::before{content:"";position:absolute;inset:0 0 auto 0;width:118px;height:118px;border-radius:50%;background:conic-gradient(from 270deg, var(--primary) calc(var(--pct)*1.8deg), #fff0f6 0 180deg, transparent 0);border:1px solid var(--border)}
+    .semi-gauge::after{content:"";position:absolute;left:18px;top:18px;width:82px;height:82px;border-radius:50%;background:#fff;border:1px solid var(--border)}
+    .gauge-value{position:relative;margin-top:-22px;font-size:17px;font-weight:900;color:var(--dark)}
+    .smart-analysis{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:14px}
+    .analysis-card{border:1px solid var(--border);border-radius:16px;background:#fff;padding:12px;min-height:120px}
+    .analysis-card h4{margin:0 0 8px;color:var(--dark)}
+    .analysis-card ul{margin:0;padding:0 18px 0 0;line-height:1.8;color:var(--text);font-size:13px}
+    .recommendation-box{margin-top:12px;background:#fde5ef;border:1px solid var(--border);border-radius:16px;padding:12px;color:#8e1141;font-weight:900;line-height:1.8}
+    .recent-notes{font-size:12px;line-height:1.8;color:var(--muted);font-weight:800}
+    @media(max-width:900px){.smart-summary{grid-template-columns:repeat(2,minmax(0,1fr))}.smart-visuals,.smart-analysis{grid-template-columns:1fr}.criteria-bar-row{grid-template-columns:1fr}.smart-gauges{grid-template-columns:1fr}}
+    @media print{.smart-report-box,.analysis-card,.gauge-card,.criteria-bars{break-inside:avoid;box-shadow:none}.semi-gauge::before,.criteria-bar-fill{print-color-adjust:exact;-webkit-print-color-adjust:exact}}
+
     @media(max-width:900px){.grid-2,.grid-3,.grid-4{grid-template-columns:1fr}.criteria-row{grid-template-columns:1fr}.container{margin:14px auto}header h1{font-size:22px}}
     @media print{
       header,.tabs,.no-print,.login{display:none!important}
@@ -134,7 +213,7 @@
   <div class="topbar">
     <div>
       <h1>KPI Dashboard - Delivery Team</h1>
-      <p id="roleText"></p>
+      <p id="roleText" class="hidden"></p>
     </div>
     <button class="btn light no-print" id="logoutBtn">تسجيل خروج</button>
   </div>
@@ -155,10 +234,38 @@
       <div id="teamLeaderViewNote" class="role-note hidden" style="margin-top:12px">
         عرض فقط لبيانات التيم ليدر الحالي بدون فلاتر. لو الصلاحية مشاهد فقط فلن تظهر صفحات التقييم.
       </div>
+
       <div id="viewMetrics" class="hidden"></div>
       <div class="grid grid-2" style="margin-top:18px">
         <div><h3>Ranking المحضرين</h3><div id="viewPreparersRank"></div></div>
         <div><h3>Ranking التيم ليدر</h3><div id="viewLeadersRank"></div></div>
+      </div>
+
+
+
+      <div id="smartPersonReportBox" class="smart-report-box">
+        <div class="smart-report-head">
+          <div>
+            <h3>التقرير التفصيلي الذكي للموظف</h3>
+            <div class="smart-muted">اترك اسم الموظف فارغًا لعرض تقرير عام لكل الموظفين حسب الفلاتر، أو اختر موظفًا لعرض تقريره التفصيلي.</div>
+          </div>
+          <button class="btn dark no-print" type="button" onclick="window.print()">طباعة التقرير التفصيلي</button>
+        </div>
+        <div class="grid grid-3 no-print">
+          <div><label>نوع الموظف</label><select id="smartReportType"><option value="preparer">محضر</option><option value="leader">تيم ليدر</option></select></div>
+          <div><label>اسم الموظف</label><select id="smartReportPerson"><option value="">كل الموظفين</option></select></div>
+          <div><label>عرض سريع</label><button class="btn light" type="button" id="refreshSmartReportBtn">تحديث التقرير</button></div>
+        </div>
+        <div id="smartPersonReport" style="margin-top:12px"></div>
+      </div>
+
+      <div id="executiveIndicatorsBox" style="margin-top:22px">
+        <div class="section-title"><h3>ملخص المتابعة السريع</h3></div>
+        <div id="executiveIndicatorsCards" class="grid grid-4"></div>
+        <div class="grid grid-2" style="margin-top:14px">
+          <div><h3>نقص التقييمات حسب الفرع</h3><div id="executiveMissingIndicators"></div></div>
+          <div><h3>أقل أداء يحتاج متابعة</h3><div id="executiveLowPerformers"></div></div>
+        </div>
       </div>
 
       <div id="executiveReportBox" style="margin-top:22px">
@@ -340,6 +447,17 @@
       <div style="margin-top:18px">
         <h3>حالة تقييم التيم ليدر خلال الفترة</h3>
         <div id="dailyLeaderFollowTable"></div>
+      </div>
+
+      <div id="dailyNotesBox" style="margin-top:22px">
+        <div class="section-title"><h3>ملاحظات التقييمات اليومية</h3></div>
+        <p style="color:var(--muted);margin-top:-6px">
+          تظهر الملاحظات للسوبر فايزر فقط حسب فلترة التاريخ والفرع، ويمكن الرجوع لأي ملاحظة قديمة بتغيير فترة المتابعة.
+        </p>
+        <div class="grid grid-2" style="margin-top:12px">
+          <div><h3>ملاحظات المحضرين</h3><div id="dailyPreparerNotes"></div></div>
+          <div><h3>ملاحظات التيم ليدر</h3><div id="dailyLeaderNotes"></div></div>
+        </div>
       </div>
     </div>
   </section>
@@ -810,6 +928,197 @@ function displayBranchForRanking(row, mode){
   if(mode === "leader") return getBranchFromLeader(row.name) || row.branch || "";
   if(mode === "preparer") return getCurrentBranchForPreparer(row.name) || row.branch || "";
   return row.branch || "";
+}
+
+function cleanNote(value){
+  const note = String(value || "").trim();
+  return note ? note : "-";
+}
+function notesSummary(records){
+  const notes = (records || [])
+    .filter(r => String(r.notes || "").trim())
+    .sort((a,b)=>(b.date || "").localeCompare(a.date || ""))
+    .slice(0, 3)
+    .map(r => `${r.date || "-"}: ${String(r.notes || "").trim()}`);
+  return notes.length ? notes.join(" | ") : "-";
+}
+function evaluationNotesRows(records, type){
+  return (records || [])
+    .filter(r => String(r.notes || "").trim())
+    .sort((a,b)=>(b.date || "").localeCompare(a.date || ""))
+    .map((r,i)=>{
+      const evaluator = type === "leader" ? (r.supervisor || "-") : leaderDisplayName(r.leader || "-");
+      const name = type === "leader" ? leaderDisplayName(r.name || "-") : (r.name || "-");
+      return `<tr>
+        <td>${i+1}</td>
+        <td>${esc(r.date || "-")}</td>
+        <td>${esc(r.branch || "-")}</td>
+        <td>${esc(evaluator)}</td>
+        <td>${esc(name)}</td>
+        <td>${esc(cleanNote(r.notes))}</td>
+      </tr>`;
+    });
+}
+
+
+
+const PREPARER_CRITERIA = [
+  {i:0, label:"الحضور والانصراف", group:"الالتزام والانضباط", solution:"تثبيت مواعيد واضحة ومتابعة الالتزام اليومي مع تنبيه مبكر عند التأخير."},
+  {i:1, label:"عدم وجود مخالفات إدارية", group:"الالتزام والانضباط", solution:"مراجعة التعليمات الأساسية وتوضيح المخالفات المتكررة ومتابعتها لمدة أسبوع."},
+  {i:2, label:"سرعة التحضير", group:"سرعة وجودة التحضير", solution:"تحديد سبب التأخير في أوقات الذروة وتوزيع المهام قبل الضغط."},
+  {i:3, label:"جودة وسلامة المنتجات", group:"سرعة وجودة التحضير", solution:"استخدام مراجعة نهائية قبل التسليم وتقليل أخطاء التغليف أو التجهيز."},
+  {i:4, label:"الالتزام بالنظافة", group:"المظهر والسلوك", solution:"تذكير يومي بمعايير النظافة ومراجعة الالتزام قبل بداية الشيفت."},
+  {i:5, label:"اللباقة والسلوك الشخصي", group:"المظهر والسلوك", solution:"توجيه مباشر لطريقة التعامل مع الزملاء والعملاء ومتابعة أي ملاحظات سلوكية."},
+  {i:6, label:"المظهر الشخصي", group:"المظهر والسلوك", solution:"متابعة الزي والمظهر مع بداية الشيفت والتنبيه عند أي مخالفة."},
+  {i:7, label:"التعاون مع الزملاء", group:"التعاون وروح الفريق", solution:"إشراك الموظف في مهام مشتركة وقياس استجابته خلال الأسبوع."},
+  {i:8, label:"الاستجابة للتوجيهات", group:"التعاون وروح الفريق", solution:"إعطاء تعليمات واضحة ومتابعة تنفيذها في نفس اليوم."},
+  {i:9, label:"حل أي مشكلة بسرعة", group:"حل المشاكل", solution:"تدريب الموظف على خطوات التعامل مع المشكلة وتصعيدها عند الحاجة."},
+  {i:10, label:"التعامل السريع مع المشاكل", group:"حل المشاكل", solution:"تحديد سيناريوهات متكررة ووضع خطوات ثابتة للتعامل معها بسرعة."}
+];
+const LEADER_CRITERIA = [
+  {i:0, label:"نتائج الفرع", group:"نتائج الفرع", solution:"وضع هدف يومي واضح ومراجعة النتائج مع الفريق نهاية كل شيفت."},
+  {i:1, label:"التقارير", group:"نتائج الفرع", solution:"تثبيت موعد يومي للتقارير ومراجعة اكتمال البيانات قبل الإرسال."},
+  {i:2, label:"تطوير وتحفيز", group:"نتائج الفرع", solution:"تحديد موظف أو اثنين أسبوعيًا للتوجيه والتحفيز بناءً على الأداء."},
+  {i:3, label:"سرعة حل المشاكل", group:"نتائج الفرع", solution:"اعتماد خطوات تصعيد واضحة للمشكلات وعدم تركها لنهاية اليوم."},
+  {i:4, label:"تنظيم الأعمال والوقت", group:"التخطيط والتنظيم", solution:"تجهيز خطة الشيفت وتوزيع المهام قبل بداية الضغط."},
+  {i:5, label:"الالتزام بالسياسات والتعليمات", group:"التخطيط والتنظيم", solution:"مراجعة السياسات الأساسية مع الفريق وربطها بمتابعة يومية."},
+  {i:6, label:"دور المتابعة اليومية", group:"التخطيط والتنظيم", solution:"عمل Check-in سريع خلال اليوم لمتابعة المحضرين وحل التعطيلات."},
+  {i:7, label:"تحسين روح الفريق", group:"تطوير الموظفين", solution:"تعزيز التواصل بين الفريق وتقليل الاحتكاكات من خلال توزيع واضح للأدوار."},
+  {i:8, label:"الالتزام بالنظم", group:"تطوير الموظفين", solution:"متابعة تطبيق النظام على كل أفراد الفريق بدون استثناء."},
+  {i:9, label:"متابعة وتحفيز الأفراد", group:"تطوير الموظفين", solution:"عمل ملاحظات فردية قصيرة لكل موظف يحتاج متابعة."},
+  {i:10, label:"تدريب الموظفين الجدد", group:"تطوير الموظفين", solution:"تحديد Buddy أو مسؤول تدريب ومراجعة تقدم الموظف الجديد."},
+  {i:11, label:"التعامل مع شكاوى العملاء", group:"حل المشاكل واتخاذ القرار", solution:"تحليل سبب الشكاوى وتحديد إجراء وقائي لتقليل تكرارها."},
+  {i:12, label:"حل المشاكل بسرعة وكفاءة", group:"حل المشاكل واتخاذ القرار", solution:"تحديد صلاحيات واضحة للحل السريع وتصعيد ما يتجاوز الصلاحية."},
+  {i:13, label:"تقليل تأثير الأخطاء", group:"حل المشاكل واتخاذ القرار", solution:"مراجعة الأخطاء المتكررة ووضع إجراء تصحيحي مباشر."}
+];
+function smartStatus(pct){
+  if(pct >= 85) return "ممتاز";
+  if(pct >= 75) return "جيد جدًا";
+  if(pct >= 65) return "جيد";
+  if(pct >= 50) return "يحتاج متابعة";
+  return "ضعيف";
+}
+function criteriaStats(records, defs){
+  return defs.map(d=>{
+    const vals = records.map(r => Number((r.scores || [])[d.i] || 0));
+    const avgScore = vals.length ? vals.reduce((a,b)=>a+b,0) / vals.length : 0;
+    return {...d, avgScore, pct: Math.round((avgScore / 2) * 100)};
+  });
+}
+function groupCriteriaStats(stats){
+  const groups = {};
+  stats.forEach(s=>{ groups[s.group] ??= []; groups[s.group].push(s.pct); });
+  return Object.entries(groups).map(([name, vals])=>({name, pct: Math.round(vals.reduce((a,b)=>a+b,0)/vals.length)}));
+}
+function gaugeCard(title, pct){
+  return `<div class="gauge-card"><div class="gauge-title">${esc(title)}</div><div class="semi-gauge" style="--pct:${Math.max(0,Math.min(100,pct))}"></div><div class="gauge-value">${pct}%</div></div>`;
+}
+function criteriaBars(stats){
+  return `<div class="criteria-bars"><div class="exec-chart-title">مقارنة بنود التقييم</div>` + stats.map(s=>`
+    <div class="criteria-bar-row">
+      <div class="criteria-bar-label" title="${esc(s.label)}">${esc(s.label)}</div>
+      <div class="criteria-bar-track"><div class="criteria-bar-fill" style="width:${Math.max(3,s.pct)}%"></div></div>
+      <div>${s.pct}%</div>
+    </div>`).join("") + `</div>`;
+}
+function smartList(items, fallback){
+  if(!items.length) return `<ul><li>${esc(fallback)}</li></ul>`;
+  return `<ul>${items.map(x=>`<li>${esc(x)}</li>`).join("")}</ul>`;
+}
+function buildSmartReasons(weak, notes){
+  const reasons = [];
+  weak.slice(0,3).forEach(w=>{
+    if(w.label.includes("سرعة") || w.label.includes("وقت") || w.label.includes("تحضير")) reasons.push(`ضعف ${w.label} قد يكون مرتبطًا بضغط الشغل أو عدم وضوح توزيع المهام.`);
+    else if(w.label.includes("جودة") || w.label.includes("سلامة")) reasons.push(`ضعف ${w.label} قد يكون بسبب نقص مراجعة نهائية قبل التسليم.`);
+    else if(w.label.includes("نظافة") || w.label.includes("مظهر")) reasons.push(`ضعف ${w.label} يحتاج متابعة بداية الشيفت قبل التشغيل.`);
+    else if(w.label.includes("تقارير")) reasons.push(`ضعف ${w.label} قد يكون بسبب عدم وجود موعد ثابت أو نموذج متابعة واضح.`);
+    else if(w.label.includes("مشاكل") || w.label.includes("شكاوى")) reasons.push(`ضعف ${w.label} قد يكون بسبب عدم وجود خطوات تصعيد واضحة وسريعة.`);
+    else reasons.push(`انخفاض بند ${w.label} يحتاج توجيه مباشر ومتابعة قصيرة المدى.`);
+  });
+  const noteText = notes.join(" ");
+  if(/تأخير|متأخر|بطء|وقت/.test(noteText)) reasons.push("الملاحظات تشير إلى وجود مشكلة مرتبطة بالوقت أو سرعة التنفيذ.");
+  if(/خطأ|غلط|راجع|مراجعة/.test(noteText)) reasons.push("الملاحظات تشير إلى احتياج لمراجعة أدق قبل إنهاء المهمة.");
+  if(/سلوك|تعامل|لباقة|مشادة/.test(noteText)) reasons.push("الملاحظات تشير إلى احتياج لتحسين طريقة التعامل والتواصل.");
+  return [...new Set(reasons)].slice(0,5);
+}
+function managementRecommendation(overallPct, weak){
+  if(overallPct >= 85) return "الأداء قوي. يوصى بالحفاظ على نفس المستوى مع تحفيز الموظف واستخدامه كنموذج إيجابي للفريق.";
+  if(overallPct >= 75) return "الأداء جيد جدًا. يوصى بمتابعة خفيفة للبنود الأقل فقط مع تثبيت نقاط القوة الحالية.";
+  if(overallPct >= 65) return "الأداء جيد لكن يحتاج خطة تحسين قصيرة لمدة أسبوعين على البنود الأضعف ثم إعادة مراجعة النتيجة.";
+  if(overallPct >= 50) return "يوصى بمتابعة مباشرة لمدة 7 أيام مع تحديد هدف يومي واضح، ثم إعادة تقييم الأداء قبل نهاية الفترة.";
+  return "يوصى بتدخل إداري سريع وخطة تدريب ومتابعة يومية، مع مراجعة الأسباب التشغيلية المؤثرة على الأداء.";
+}
+function renderSmartPersonSelectors(pData, lData, type){
+  const typeEl = $("smartReportType"), personEl = $("smartReportPerson");
+  if(!typeEl || !personEl) return;
+  if(typeEl.value !== type) typeEl.value = type;
+  const names = [...new Set((type === "leader" ? lData : pData).map(r => r.name).filter(Boolean))].sort((a,b)=>a.localeCompare(b));
+  const old = personEl.value;
+  personEl.innerHTML = `<option value="">كل الموظفين</option>` + names.map(n=>`<option value="${esc(n)}">${esc(type === "leader" ? leaderDisplayName(n) : n)}</option>`).join("");
+  // لا نختار أول موظف تلقائيًا حتى لا يظل التقرير ثابتًا على اسم معين.
+  // لو الاسم المختار موجود في الفلتر الحالي نحافظ عليه، غير كده نرجع لاختيار فارغ.
+  personEl.value = names.includes(old) ? old : "";
+}
+function renderSmartPersonReport(pData, lData, month, branch, viewType){
+  const box = $("smartPersonReport");
+  if(!box) return;
+  if(currentRole === "teamleader"){
+    $("smartPersonReportBox")?.classList.add("hidden");
+    return;
+  }
+  $("smartPersonReportBox")?.classList.remove("hidden");
+  const typeEl = $("smartReportType");
+  let type = typeEl ? typeEl.value : "preparer";
+  if(viewType === "leader") type = "leader";
+  if(viewType === "preparer") type = "preparer";
+  renderSmartPersonSelectors(pData, lData, type);
+  const person = $("smartReportPerson")?.value || "";
+  const all = type === "leader" ? lData : pData;
+  // الوضع الافتراضي: تقرير عام لكل الموظفين حسب الفلاتر. اختيار الاسم يحول التقرير لتقرير شخصي.
+  const records = person ? all.filter(r => r.name === person) : all;
+  if(!records.length){
+    box.innerHTML = `<div class="empty">لا توجد تقييمات ${person ? "لهذا الموظف" : "للفلتر الحالي"} في الفترة المحددة</div>`;
+    return;
+  }
+  const defs = type === "leader" ? LEADER_CRITERIA : PREPARER_CRITERIA;
+  const maxDaily = type === "leader" ? MAX_L : MAX_P;
+  const isGeneralReport = !person;
+  const displayName = isGeneralReport ? "تقرير عام" : (type === "leader" ? leaderDisplayName(person) : person);
+  const currentBranch = isGeneralReport ? (branch || "كل الفروع") : (type === "leader" ? (getBranchFromLeader(person) || records[records.length-1].branch || "-") : (getCurrentBranchForPreparer(person) || records[records.length-1].branch || "-"));
+  const total = sum(records, "total");
+  const overallPct = records.length ? Math.round((total / (records.length * maxDaily)) * 100) : 0;
+  const stats = criteriaStats(records, defs).sort((a,b)=>b.pct-a.pct);
+  const strengths = stats.filter(s=>s.pct>=75).slice(0,4).map(s=>`${s.label} (${s.pct}%)`);
+  const weakStats = [...stats].sort((a,b)=>a.pct-b.pct).slice(0,4);
+  const weaknesses = weakStats.map(s=>`${s.label} (${s.pct}%)`);
+  const canShowNotes = currentRole === "supervisor" || currentRole === "admin";
+  const notes = canShowNotes ? records.filter(r=>String(r.notes||"").trim()).sort((a,b)=>(b.date||"").localeCompare(a.date||"")).slice(0,6).map(r=>`${r.date}: ${String(r.notes||"").trim()}`) : [];
+  const reasons = buildSmartReasons(weakStats, notes);
+  const solutions = weakStats.slice(0,4).map(s=>`${s.label}: ${s.solution}`);
+  const groups = groupCriteriaStats(stats);
+  const gauges = [gaugeCard("إجمالي الأداء", overallPct)].concat(groups.slice(0,5).map(g=>gaugeCard(g.name, g.pct))).join("");
+  box.innerHTML = `
+    <div class="role-note">${isGeneralReport ? "تقرير عام" : "تقرير"}: <b>${esc(displayName)}</b> | النوع: <b>${type === "leader" ? "تيم ليدر" : "محضر"}</b> | ${isGeneralReport ? "النطاق" : "الفرع الحالي"}: <b>${esc(currentBranch)}</b> | الفترة: <b>${month || "كل الشهور"}</b>${branch && !isGeneralReport ? ` | فلتر الفرع: <b>${esc(branch)}</b>` : ""}</div>
+    <div class="smart-summary">
+      <div class="smart-mini-card"><span>${isGeneralReport ? "عدد التقييمات" : "أيام التقييم"}</span><b>${records.length}</b></div>
+      <div class="smart-mini-card"><span>إجمالي النقاط</span><b>${total}/${records.length * maxDaily}</b></div>
+      <div class="smart-mini-card"><span>نسبة الأداء</span><b>${overallPct}%</b></div>
+      <div class="smart-mini-card"><span>الحالة</span><b>${smartStatus(overallPct)}</b></div>
+      <div class="smart-mini-card"><span>آخر تقييم</span><b>${records.map(r=>r.date).sort().slice(-1)[0] || "-"}</b></div>
+    </div>
+    <div class="smart-visuals">
+      ${criteriaBars(stats)}
+      <div class="smart-gauges">${gauges}</div>
+    </div>
+    <div class="smart-analysis">
+      <div class="analysis-card"><h4>نقاط القوة</h4>${smartList(strengths, "لا توجد نقاط قوة واضحة في الفترة المختارة، ويحتاج الموظف لمتابعة عامة.")}</div>
+      <div class="analysis-card"><h4>نقاط تحتاج تحسين</h4>${smartList(weaknesses, "لا توجد نقاط ضعف واضحة، الأداء مستقر في أغلب البنود.")}</div>
+      <div class="analysis-card"><h4>الأسباب المحتملة</h4>${smartList(reasons, "لا توجد أسباب واضحة من البيانات الحالية. يفضل مراجعة الملاحظات اليومية مع المسؤول المباشر.")}</div>
+      <div class="analysis-card"><h4>حلول وإجراءات مقترحة</h4>${smartList(solutions, "الاستمرار في المتابعة الدورية والحفاظ على مستوى الأداء.")}</div>
+    </div>
+    ${canShowNotes ? `<div class="analysis-card" style="margin-top:12px"><h4>آخر الملاحظات المكتوبة</h4><div class="recent-notes">${notes.length ? notes.map(esc).join("<br>") : "لا توجد ملاحظات مكتوبة في الفترة المختارة."}</div></div>` : ""}
+    <div class="recommendation-box">توصية الإدارة: ${esc(managementRecommendation(overallPct, weakStats))}</div>
+  `;
 }
 
 function leaderDisplayName(leaderName){
@@ -1615,9 +1924,10 @@ function login(){
   currentRole = USERS[u].role;
   $("loginScreen").classList.add("hidden");
   $("app").classList.remove("hidden");
-  $("roleText").textContent = currentRole === "teamleader"
-    ? `المستخدم: ${leaderDisplayName(currentUser)} | اسم الدخول: ${currentUser} | الصلاحية: ${teamLeaderPermissionLabel(getTeamLeaderPermission(currentUser))}`
-    : `المستخدم: ${currentUser} | الصلاحية: ${currentRole}`;
+  if($("roleText")){
+    $("roleText").textContent = "";
+    $("roleText").classList.add("hidden");
+  }
   buildTabs();
   if(currentRole === "teamleader"){
     $("pLeader").value = currentUser;
@@ -1871,7 +2181,8 @@ function groupSummary(list, max){
       days:arr.length,
       total:totalPoints,
       maxTotal:maxPoints,
-      avg:percentScore
+      avg:percentScore,
+      notes: notesSummary(arr)
     };
   }).sort((a,b)=>
     (b.total - a.total) ||
@@ -1880,7 +2191,290 @@ function groupSummary(list, max){
     a.name.localeCompare(b.name)
   );
 }
+
+function displayPersonName(name, mode){
+  return mode === "leader" ? leaderDisplayName(name) : name;
+}
+
+function uniqueEvalCount(list, keyFn){
+  return new Set((list || []).map(keyFn).filter(Boolean)).size;
+}
+
+function monthDaysForIndicators(month){
+  const m = month || monthNow();
+  const [year, mon] = String(m).split("-").map(Number);
+  if(!year || !mon) return 30;
+  return new Date(year, mon, 0).getDate();
+}
+
+function scopedTeamLeaders(branch){
+  return getTeamLeaders().filter(leader => {
+    const b = getBranchFromLeader(leader);
+    return !branch || b === branch;
+  });
+}
+
+function commitmentInfo(month, branch, type, pData, lData){
+  const days = monthDaysForIndicators(month);
+  const tls = scopedTeamLeaders(branch);
+  let expectedPreparers = 0;
+  tls.forEach(leader => {
+    expectedPreparers += ((preparerNames[leader] || []).length * days);
+  });
+  let expectedLeaders = tls.length * days;
+  let actualPreparers = uniqueEvalCount(pData, r => `${r.date}|${r.leader}|${r.name}`);
+  let actualLeaders = uniqueEvalCount(lData, r => `${r.date}|${r.name}`);
+
+  if(type === "preparer"){
+    expectedLeaders = 0;
+    actualLeaders = 0;
+  }
+  if(type === "leader"){
+    expectedPreparers = 0;
+    actualPreparers = 0;
+  }
+
+  const expected = expectedPreparers + expectedLeaders;
+  const actual = actualPreparers + actualLeaders;
+  const missing = Math.max(expected - actual, 0);
+  return {
+    expected,
+    actual,
+    missing,
+    percent: expected ? Math.min(100, Math.round((actual / expected) * 100)) : 0
+  };
+}
+
+function branchIndicatorRows(pData, lData, pSum, lSum, selectedBranch){
+  const branches = selectedBranch ? [selectedBranch] : allBranches();
+  return branches.map((branch, i) => {
+    const pRecords = pData.filter(r => r.branch === branch);
+    const lRecords = lData.filter(r => r.branch === branch);
+    const pPeople = pSum.filter(r => displayBranchForRanking(r, "preparer").split(" / ").includes(branch));
+    const lPeople = lSum.filter(r => displayBranchForRanking(r, "leader") === branch || displayBranchForRanking(r, "leader").split(" / ").includes(branch));
+    const branchAvgValues = [...pPeople.map(x=>x.avg), ...lPeople.map(x=>x.avg)].filter(x => !isNaN(x));
+    const branchAvg = branchAvgValues.length ? avg(branchAvgValues) : 0;
+    return `<tr>
+      <td>${i+1}</td>
+      <td>${esc(branch || "-")}</td>
+      <td>${pRecords.length}</td>
+      <td>${lRecords.length}</td>
+      <td>${branchAvg ? branchAvg + "%" : "-"}</td>
+      <td>${branchAvg ? badge(branchAvg) : "-"}</td>
+    </tr>`;
+  });
+}
+
+function missingIndicatorRows(month, selectedBranch, type, pData, lData){
+  const days = monthDaysForIndicators(month);
+  const branches = selectedBranch ? [selectedBranch] : allBranches();
+  return branches.map((branch, i) => {
+    const tls = scopedTeamLeaders(branch);
+    let expectedPreparers = 0;
+    tls.forEach(leader => expectedPreparers += ((preparerNames[leader] || []).length * days));
+    let expectedLeaders = tls.length * days;
+    let actualPreparers = uniqueEvalCount(pData.filter(r=>r.branch===branch), r => `${r.date}|${r.leader}|${r.name}`);
+    let actualLeaders = uniqueEvalCount(lData.filter(r=>r.branch===branch), r => `${r.date}|${r.name}`);
+
+    if(type === "preparer"){
+      expectedLeaders = 0;
+      actualLeaders = 0;
+    }
+    if(type === "leader"){
+      expectedPreparers = 0;
+      actualPreparers = 0;
+    }
+
+    const expected = expectedPreparers + expectedLeaders;
+    const actual = actualPreparers + actualLeaders;
+    const missing = Math.max(expected - actual, 0);
+    const pct = expected ? Math.min(100, Math.round((actual/expected)*100)) : 0;
+    return `<tr>
+      <td>${i+1}</td>
+      <td>${esc(branch || "-")}</td>
+      <td>${expected || "-"}</td>
+      <td>${actual}</td>
+      <td>${missing || "-"}</td>
+      <td>${expected ? pct + "%" : "-"}</td>
+    </tr>`;
+  }).sort((a,b)=>{
+    const getMiss = row => Number((row.match(/<td>(\d+|-)<\/td>\s*<td>(\d+|-)<\/td>\s*<td>(\d+|-)/)||[])[3] || 0);
+    return getMiss(b) - getMiss(a);
+  });
+}
+
+function lowPerformerRows(pSum, lSum, type){
+  const rows = [];
+  if(type !== "leader"){
+    [...pSum].sort((a,b)=>a.avg-b.avg).slice(0,5).forEach((r)=>{
+      rows.push({name:r.name, branch:displayBranchForRanking(r,"preparer"), avg:r.avg, mode:"محضر"});
+    });
+  }
+  if(type !== "preparer"){
+    [...lSum].sort((a,b)=>a.avg-b.avg).slice(0,3).forEach((r)=>{
+      rows.push({name:leaderDisplayName(r.name), branch:displayBranchForRanking(r,"leader"), avg:r.avg, mode:"تيم ليدر"});
+    });
+  }
+  return rows.sort((a,b)=>a.avg-b.avg).slice(0,6).map((r,i)=>`
+    <tr>
+      <td>${i+1}</td>
+      <td>${esc(r.mode)}</td>
+      <td>${esc(r.name)}</td>
+      <td>${esc(r.branch || "-")}</td>
+      <td>${r.avg}%</td>
+      <td>${badge(r.avg)}</td>
+    </tr>
+  `);
+}
+
+function executiveTone(pct){
+  pct = Number(pct) || 0;
+  if(pct >= 75) return "good";
+  if(pct >= 50) return "mid";
+  return "bad";
+}
+
+function executiveMissingData(month, selectedBranch, type, pData, lData){
+  const days = monthDaysForIndicators(month);
+  const branches = selectedBranch ? [selectedBranch] : allBranches();
+  return branches.map((branch) => {
+    const tls = scopedTeamLeaders(branch);
+    let expectedPreparers = 0;
+    tls.forEach(leader => expectedPreparers += ((preparerNames[leader] || []).length * days));
+    let expectedLeaders = tls.length * days;
+    let actualPreparers = uniqueEvalCount(pData.filter(r=>r.branch===branch), r => `${r.date}|${r.leader}|${r.name}`);
+    let actualLeaders = uniqueEvalCount(lData.filter(r=>r.branch===branch), r => `${r.date}|${r.name}`);
+    if(type === "preparer") { expectedLeaders = 0; actualLeaders = 0; }
+    if(type === "leader") { expectedPreparers = 0; actualPreparers = 0; }
+    const expected = expectedPreparers + expectedLeaders;
+    const actual = actualPreparers + actualLeaders;
+    const missing = Math.max(expected - actual, 0);
+    const pct = expected ? Math.min(100, Math.round((actual/expected)*100)) : 0;
+    return {branch, expected, actual, missing, pct};
+  }).sort((a,b)=>b.missing-a.missing || a.pct-b.pct);
+}
+
+function executiveBranchData(pData, lData, pSum, lSum, selectedBranch){
+  const branches = selectedBranch ? [selectedBranch] : allBranches();
+  return branches.map((branch) => {
+    const pRecords = pData.filter(r => r.branch === branch);
+    const lRecords = lData.filter(r => r.branch === branch);
+    const pPeople = pSum.filter(r => displayBranchForRanking(r, "preparer").split(" / ").includes(branch));
+    const lPeople = lSum.filter(r => displayBranchForRanking(r, "leader") === branch || displayBranchForRanking(r, "leader").split(" / ").includes(branch));
+    const branchAvgValues = [...pPeople.map(x=>x.avg), ...lPeople.map(x=>x.avg)].filter(x => !isNaN(x));
+    const branchAvg = branchAvgValues.length ? avg(branchAvgValues) : 0;
+    return {branch, pCount:pRecords.length, lCount:lRecords.length, avg:branchAvg};
+  });
+}
+
+function executiveLowData(pSum, lSum, type){
+  const rows = [];
+  if(type !== "leader"){
+    [...pSum].sort((a,b)=>a.avg-b.avg).slice(0,5).forEach((r)=>{
+      rows.push({name:r.name, branch:displayBranchForRanking(r,"preparer"), avg:r.avg, mode:"محضر"});
+    });
+  }
+  if(type !== "preparer"){
+    [...lSum].sort((a,b)=>a.avg-b.avg).slice(0,3).forEach((r)=>{
+      rows.push({name:leaderDisplayName(r.name), branch:displayBranchForRanking(r,"leader"), avg:r.avg, mode:"تيم ليدر"});
+    });
+  }
+  return rows.sort((a,b)=>a.avg-b.avg).slice(0,6);
+}
+
+function renderMissingChart(data){
+  const rows = data.filter(x=>x.expected || x.actual || x.missing);
+  if(!rows.length) return `<div class="chart-empty">لا توجد بيانات</div>`;
+  return `<div class="exec-chart-card"><div class="exec-chart-title">نسبة الالتزام حسب الفرع</div>` + rows.map(r=>`
+    <div class="progress-row">
+      <div class="chart-line-head"><span>${esc(r.branch || "-")}</span><span class="chart-meta">تم ${r.actual} / المطلوب ${r.expected || "-"} - ناقص ${r.missing || 0}</span></div>
+      <div class="chart-track"><div class="chart-fill ${executiveTone(r.pct)}" style="width:${Math.max(r.pct, r.expected ? 2 : 0)}%"></div></div>
+      <div class="chart-meta" style="margin-top:4px">الالتزام: ${r.expected ? r.pct + "%" : "-"}</div>
+    </div>`).join("") + `</div>`;
+}
+
+function renderCommitmentDonut(commitment){
+  const pct = commitment.expected ? Math.min(100, Math.max(0, Number(commitment.percent) || 0)) : 0;
+  const missing = Math.max((commitment.expected || 0) - (commitment.actual || 0), 0);
+  return `<div class="exec-chart-card">
+    <div class="exec-chart-title">نسبة الالتزام العامة</div>
+    <div class="donut-wrap">
+      <div class="donut" style="--pct:${pct}"><div class="donut-inner"><div><span>${commitment.expected ? pct + "%" : "-"}</span><small>التزام</small></div></div></div>
+      <div class="donut-legend">
+        <div>المطلوب: ${commitment.expected || "-"}</div>
+        <div>تم: ${commitment.actual || 0}</div>
+        <div>الناقص: ${commitment.expected ? missing : "-"}</div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function renderBranchChart(data){
+  const rows = data.filter(x=>x.expected || x.actual || x.missing);
+  if(!rows.length) return `<div class="chart-empty">لا توجد بيانات</div>`;
+  return `<div class="exec-chart-card"><div class="exec-chart-title">دوائر الالتزام حسب الفرع</div><div class="branch-circles">` + rows.map(r=>`
+    <div class="branch-circle-card">
+      <div class="mini-donut" style="--pct:${r.pct || 0}"><span>${r.expected ? (r.pct || 0) + "%" : "-"}</span></div>
+      <div class="branch-circle-name">${esc(r.branch || "-")}</div>
+      <div class="branch-circle-sub">تم ${r.actual || 0} / ناقص ${r.missing || 0}</div>
+    </div>`).join("") + `</div></div>`;
+}
+
+function renderLowPerformersChart(data){
+  if(!data.length) return `<div class="chart-empty">لا توجد بيانات</div>`;
+  return `<div class="exec-chart-card"><div class="exec-chart-title">أقل نسب أداء</div>` + data.map(r=>`
+    <div class="low-chart-row">
+      <div class="low-name"><span>${esc(r.name)}</span><span>${r.avg}%</span></div>
+      <div class="low-sub">${esc(r.mode)} - ${esc(r.branch || "-")} - ${status(r.avg)[0]}</div>
+      <div class="chart-track" style="margin-top:6px"><div class="chart-fill ${executiveTone(r.avg)}" style="width:${Math.max(r.avg, 3)}%"></div></div>
+    </div>`).join("") + `</div>`;
+}
+
+function renderExecutiveIndicators(pData, lData, pSum, lSum, month, branch, type){
+  const box = $("executiveIndicatorsBox");
+  if(!box) return;
+
+  // لوحة المؤشرات مخصصة للسوبر فايزر ويوزر الفيو فقط حتى لا تزحم واجهة التيم ليدر.
+  if(currentRole === "teamleader"){
+    box.classList.add("hidden");
+    return;
+  }
+  box.classList.remove("hidden");
+
+  const commitment = commitmentInfo(month, branch, type, pData, lData);
+  const topPreparer = pSum.length ? [...pSum].sort((a,b)=>b.avg-a.avg)[0] : null;
+  const topLeader = lSum.length ? [...lSum].sort((a,b)=>b.avg-a.avg)[0] : null;
+  const lowData = executiveLowData(pSum, lSum, type);
+  const missingData = executiveMissingData(month, branch, type, pData, lData);
+  const bestBranchText = (() => {
+    const temp = (branch ? [branch] : allBranches()).map(b => {
+      const values = [];
+      pSum.forEach(r=>{ if(displayBranchForRanking(r,"preparer").split(" / ").includes(b)) values.push(r.avg); });
+      lSum.forEach(r=>{ if(displayBranchForRanking(r,"leader").split(" / ").includes(b)) values.push(r.avg); });
+      return {branch:b, avg:values.length ? avg(values) : 0};
+    }).filter(x=>x.avg>0).sort((a,b)=>b.avg-a.avg)[0];
+    return temp ? `${temp.branch} - ${temp.avg}%` : "-";
+  })();
+
+  const totalMissing = missingData.reduce((sum, r) => sum + (Number(r.missing) || 0), 0);
+  $("executiveIndicatorsCards").innerHTML =
+    metric("نسبة الالتزام", commitment.expected ? commitment.percent + "%" : "-", commitment.expected ? `${commitment.actual}/${commitment.expected}` : "لا يوجد هدف محسوب")+
+    metric("تقييمات المحضرين", type === "leader" ? "-" : pData.length, "حسب الفلتر الحالي")+
+    metric("تقييمات التيم ليدر", type === "preparer" ? "-" : lData.length, "حسب الفلتر الحالي")+
+    metric("ناقص تقييمات", commitment.expected ? totalMissing : "-", "حسب الفلتر الحالي");
+
+  $("executiveLowPerformers").innerHTML = renderLowPerformersChart(lowData.slice(0,5));
+  $("executiveMissingIndicators").innerHTML = renderMissingChart(missingData);
+}
+
 function filterBy(list, month, branch){return list.filter(r=>(!month||monthOf(r.date)===month)&&(!branch||r.branch===branch))}
+function renderViewNotes(pData, lData, type){
+  if(!$('viewPreparerNotes') || !$('viewLeaderNotes')) return;
+  const pRows = type === "leader" ? [] : evaluationNotesRows(pData, "preparer");
+  const lRows = type === "preparer" ? [] : evaluationNotesRows(lData, "leader");
+  if($('viewPreparerNotes')) $('viewPreparerNotes').innerHTML = table(["#","التاريخ","الفرع","المقيّم","المحضر","ملاحظات"], pRows);
+  if($('viewLeaderNotes')) $('viewLeaderNotes').innerHTML = table(["#","التاريخ","الفرع","المقيّم","التيم ليدر","ملاحظات"], lRows);
+}
 function renderView(){
   let month=$("viewMonth").value;
   let branch=$("viewBranch").value;
@@ -1901,6 +2495,9 @@ function renderView(){
   const pData=filterBy(preparers,month,branch);
   const lData=filterBy(leaders,month,branch);
   const pSum=groupSummary(pData,MAX_P), lSum=groupSummary(lData,MAX_L);
+  renderExecutiveIndicators(pData, lData, pSum, lSum, month, branch, type);
+  renderViewNotes(pData, lData, type);
+  renderSmartPersonReport(pData, lData, month, branch, type);
 
   if(currentRole === "teamleader"){
     const scope = canTeamLeaderViewAllBranches(currentUser) ? "كل الفروع" : (branch || "-");
@@ -1998,6 +2595,64 @@ function renderExecutiveReport(pSum, lSum, month, branch){
 }
 
 
+
+
+function renderDailyFollowNotes(dateFrom, dateTo, selectedBranch){
+  if(!$('dailyPreparerNotes') || !$('dailyLeaderNotes')) return;
+
+  if(currentRole !== "supervisor" && currentRole !== "admin"){
+    if($('dailyNotesBox')) $('dailyNotesBox').classList.add('hidden');
+    return;
+  }
+
+  if($('dailyNotesBox')) $('dailyNotesBox').classList.remove('hidden');
+
+  const pNotes = preparers
+    .filter(r =>
+      r.date >= dateFrom &&
+      r.date <= dateTo &&
+      (!selectedBranch || r.branch === selectedBranch) &&
+      String(r.notes || '').trim()
+    )
+    .sort((a,b)=>(b.date || '').localeCompare(a.date || ''))
+    .map((r,i)=>`
+      <tr>
+        <td>${i+1}</td>
+        <td>${esc(r.date || '-')}</td>
+        <td>${esc(r.branch || '-')}</td>
+        <td>${esc(leaderDisplayName(r.leader || '-'))}</td>
+        <td>${esc(r.name || '-')}</td>
+        <td>${esc(cleanNote(r.notes))}</td>
+      </tr>
+    `);
+
+  const lNotes = leaders
+    .filter(r =>
+      r.date >= dateFrom &&
+      r.date <= dateTo &&
+      (!selectedBranch || r.branch === selectedBranch) &&
+      String(r.notes || '').trim()
+    )
+    .sort((a,b)=>(b.date || '').localeCompare(a.date || ''))
+    .map((r,i)=>`
+      <tr>
+        <td>${i+1}</td>
+        <td>${esc(r.date || '-')}</td>
+        <td>${esc(r.branch || '-')}</td>
+        <td>${esc(r.supervisor || '-')}</td>
+        <td>${esc(leaderDisplayName(r.name || '-'))}</td>
+        <td>${esc(cleanNote(r.notes))}</td>
+      </tr>
+    `);
+
+  $('dailyPreparerNotes').innerHTML = pNotes.length
+    ? table(['#','التاريخ','الفرع','المقيّم','المحضر','الملاحظة'], pNotes)
+    : `<div class="empty">لا توجد ملاحظات محضرين في الفترة المحددة</div>`;
+
+  $('dailyLeaderNotes').innerHTML = lNotes.length
+    ? table(['#','التاريخ','الفرع','السوبر فايزر','التيم ليدر','الملاحظة'], lNotes)
+    : `<div class="empty">لا توجد ملاحظات تيم ليدر في الفترة المحددة</div>`;
+}
 
 function renderDailyFollowFilters(){
   if(!$("dailyFollowBranch")) return;
@@ -2111,14 +2766,13 @@ function renderDailyFollow(){
           <td>${missingDays}</td>
           <td><span class="badge ${statusClass}">${statusText}</span></td>
           <td>${missingDates.length ? esc(missingDates.join(" - ")) : "-"}</td>
-          <td>${evaluatedDates.length ? esc(evaluatedDates.join(" - ")) : "-"}</td>
         </tr>
       `);
     });
   });
 
   $("dailyFollowTable").innerHTML = table(
-    ["اسم التيم ليدر","الفرع","اسم المحضر","أيام الفترة","أيام التقييم","الأيام الناقصة","الحالة","الأيام غير المقيمة","أيام تم تقييمها"],
+    ["اسم التيم ليدر","الفرع","اسم المحضر","أيام الفترة","أيام التقييم","الأيام الناقصة","الحالة","الأيام غير المقيمة"],
     rows
   );
 
@@ -2161,17 +2815,18 @@ function renderDailyFollow(){
         <td>${missingDays}</td>
         <td><span class="badge ${statusClass}">${statusText}</span></td>
         <td>${missingDates.length ? esc(missingDates.join(" - ")) : "-"}</td>
-        <td>${evaluatedDates.length ? esc(evaluatedDates.join(" - ")) : "-"}</td>
       </tr>
     `;
   });
 
   if($("dailyLeaderFollowTable")){
     $("dailyLeaderFollowTable").innerHTML = table(
-      ["#","اسم التيم ليدر","الفرع","أيام الفترة","أيام التقييم","الأيام الناقصة","الحالة","الأيام غير المقيمة","أيام تم تقييمه فيها"],
+      ["#","اسم التيم ليدر","الفرع","أيام الفترة","أيام التقييم","الأيام الناقصة","الحالة","الأيام غير المقيمة"],
       leaderRows
     );
   }
+
+  renderDailyFollowNotes(dateFrom, dateTo, selectedBranch);
 }
 
 
@@ -2448,6 +3103,12 @@ $("changePasswordBtn").addEventListener("click", changePassword);
 $("resetPasswordsBtn").addEventListener("click", resetPasswords);
 
 ["viewMonth","viewBranch","viewType"].forEach(id=>$(id).addEventListener("input",renderView));
+if($("smartReportType")) $("smartReportType").addEventListener("input", () => {
+  if($("smartReportPerson")) $("smartReportPerson").value = "";
+  renderView();
+});
+if($("smartReportPerson")) $("smartReportPerson").addEventListener("input", renderView);
+if($("refreshSmartReportBtn")) $("refreshSmartReportBtn").addEventListener("click", renderView);
 if($("clearBtn")) $("clearBtn").onclick=()=>{
   const word = prompt("لمسح كل البيانات اكتب DELETE");
   if(word !== "DELETE"){

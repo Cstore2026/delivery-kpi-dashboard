@@ -1179,8 +1179,47 @@ function renderSmartPersonReport(pData, lData, month, branch, viewType){
   `;
 }
 
+function isGenericLeaderName(name){
+  const s = String(name || "").trim();
+  return /^تيم\s*ليدر/.test(s);
+}
+
+function rawLeaderDisplayName(leaderName){
+  const s = String(leaderName || "").trim();
+  if(!s) return "";
+  if(LEADER_INTERNAL_NAMES[s]) return LEADER_INTERNAL_NAMES[s];
+  if(USERS[s] && USERS[s].display && !isGenericLeaderName(USERS[s].display)) return USERS[s].display;
+  if(!isGenericLeaderName(s)) return s;
+  return "";
+}
+
 function leaderDisplayName(leaderName){
-  return LEADER_INTERNAL_NAMES[leaderName] || leaderName;
+  const s = String(leaderName || "").trim();
+  if(!s) return "";
+
+  // 1) الاسم الداخلي المحدد من السوبر فايزر له الأولوية
+  const direct = rawLeaderDisplayName(s);
+  if(direct) return direct;
+
+  // 2) لو الاسم قديم بالشكل: تيم ليدر + الفرع، حاول نجيب يوزر التيم ليدر الحقيقي لنفس الفرع
+  const branch = getBranchFromLeader(s);
+  if(branch){
+    const sameBranchUser = Object.keys(USERS || {}).find(u =>
+      USERS[u] && USERS[u].role === "teamleader" &&
+      u !== s &&
+      getBranchFromLeader(u) === branch &&
+      rawLeaderDisplayName(u)
+    );
+    if(sameBranchUser) return rawLeaderDisplayName(sameBranchUser);
+
+    const sameBranchEval = (leaders || []).find(r =>
+      r && r.name && r.name !== s && r.branch === branch && rawLeaderDisplayName(r.name)
+    );
+    if(sameBranchEval) return rawLeaderDisplayName(sameBranchEval.name);
+  }
+
+  // 3) fallback لو مفيش اسم حقيقي محفوظ
+  return s;
 }
 
 function displayLeaderNameForTables(leaderName){
@@ -2709,40 +2748,71 @@ function dailyCriteriaDetails(record, type){
   `;
 }
 function updateDailyDetailPersons(){
-  if(!$("dailyDetailPerson")) return;
-  const type = $("dailyDetailType").value;
-  const branch = $("dailyFollowBranch") ? $("dailyFollowBranch").value : "";
-  let names = [];
+  if(!$('dailyDetailPerson')) return;
+  const type = $('dailyDetailType').value;
+  const branch = $('dailyFollowBranch') ? $('dailyFollowBranch').value : "";
+  const old = $('dailyDetailPerson').value;
+
   if(type === "leader"){
-    names = getTeamLeaders().filter(n => !branch || getBranchFromLeader(n) === branch).map(n => leaderDisplayName(n));
-  } else {
-    names = [...new Set([...(Object.values(preparerNames||{}).flat()), ...preparers.map(r=>r.name)].filter(Boolean))].sort();
+    // اعرض أسماء التيم ليدر فقط عند اختيار نوع الموظف = تيم ليدر.
+    // نقرأ الأسماء من اليوزرات ومن التقييمات القديمة حتى يظهر أي تيم ليدر له تقييمات ولو بدون يوزر دخول.
+    const leaderKeys = [...new Set([
+      ...getTeamLeaders(),
+      ...leaders.map(r => r.name).filter(Boolean)
+    ])].filter(Boolean);
+
+    const options = leaderKeys
+      .filter(key => {
+        if(!branch) return true;
+        const leaderBranch = getBranchFromLeader(key) || ((leaders.find(r => r.name === key) || {}).branch || "");
+        return leaderBranch === branch || leaders.some(r => r.name === key && r.branch === branch);
+      })
+      .map(key => ({ value: key, label: leaderDisplayName(key) }))
+      .sort((a,b) => a.label.localeCompare(b.label, 'ar'));
+
+    $('dailyDetailPerson').innerHTML = `<option value="">اختر التيم ليدر</option>` +
+      options.map(o => `<option value="${esc(o.value)}">${esc(o.label)}</option>`).join("");
+
+    if(options.some(o => o.value === old)) $('dailyDetailPerson').value = old;
+    return;
   }
-  const old = $("dailyDetailPerson").value;
-  $("dailyDetailPerson").innerHTML = `<option value="">اختر الموظف</option>` + names.map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join("");
-  if(names.includes(old)) $("dailyDetailPerson").value = old;
+
+  // محضر: اعرض أسماء المحضرين فقط
+  const names = [...new Set([
+    ...(Object.values(preparerNames||{}).flat()),
+    ...preparers.map(r=>r.name)
+  ].filter(Boolean))].sort((a,b)=>a.localeCompare(b,'ar'));
+
+  $('dailyDetailPerson').innerHTML = `<option value="">اختر المحضر</option>` +
+    names.map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join("");
+  if(names.includes(old)) $('dailyDetailPerson').value = old;
 }
 function renderDailySpecificEval(){
-  if(!$("dailyDetailResult")) return;
-  const date = $("dailyDetailDate").value || today();
-  const type = $("dailyDetailType").value;
-  const name = $("dailyDetailPerson").value;
-  const branch = $("dailyFollowBranch") ? $("dailyFollowBranch").value : "";
+  if(!$('dailyDetailResult')) return;
+  const date = $('dailyDetailDate').value || today();
+  const type = $('dailyDetailType').value;
+  const name = $('dailyDetailPerson').value;
+  const branch = $('dailyFollowBranch') ? $('dailyFollowBranch').value : "";
   if(!name){
-    $("dailyDetailResult").innerHTML = `<div class="empty">اختر اسم الموظف لعرض تقييم اليوم</div>`;
+    $('dailyDetailResult').innerHTML = `<div class="empty">اختر اسم الموظف لعرض تقييم اليوم</div>`;
     return;
   }
   let records = [];
   if(type === "leader"){
-    records = leaders.filter(r => r.date === date && leaderDisplayName(r.name) === name && (!branch || r.branch === branch));
+    // عند اختيار تيم ليدر نبحث في تقييمات التيم ليدر، وليس تقييمات المحضرين.
+    records = leaders.filter(r =>
+      r.date === date &&
+      (r.name === name || leaderDisplayName(r.name) === name) &&
+      (!branch || r.branch === branch)
+    );
   } else {
     records = preparers.filter(r => r.date === date && r.name === name && (!branch || r.branch === branch));
   }
   if(!records.length){
-    $("dailyDetailResult").innerHTML = `<div class="empty">لا يوجد تقييم لهذا الموظف في اليوم المحدد</div>`;
+    $('dailyDetailResult').innerHTML = `<div class="empty">لا يوجد تقييم لهذا الموظف في اليوم المحدد</div>`;
     return;
   }
-  $("dailyDetailResult").innerHTML = records.map(r => dailyCriteriaDetails(r, type)).join(`<hr style="border:0;border-top:1px solid var(--border);margin:14px 0">`);
+  $('dailyDetailResult').innerHTML = records.map(r => dailyCriteriaDetails(r, type)).join(`<hr style="border:0;border-top:1px solid var(--border);margin:14px 0">`);
 }
 
 function renderDailyFollowNotes(dateFrom, dateTo, selectedBranch){

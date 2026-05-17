@@ -3243,7 +3243,19 @@ $("settingsAddPreparerBtn").addEventListener("click", addPreparerNameFromSetting
 $("settingsRefreshBtn").addEventListener("click", renderSettingsPreparersList);
 $("dailyFollowDateFrom").addEventListener("input", renderDailyFollow);
 $("dailyFollowDateTo").addEventListener("input", renderDailyFollow);
-$("dailyFollowBranch").addEventListener("input", renderDailyFollow);
+$("dailyFollowBranch").addEventListener("input", () => {
+  renderDailyFollow();
+  updateDailyDetailPersons();
+  renderDailySpecificEval();
+});
+if($("dailyDetailType")) $("dailyDetailType").addEventListener("input", () => {
+  if($("dailyDetailPerson")) $("dailyDetailPerson").value = "";
+  updateDailyDetailPersons();
+  renderDailySpecificEval();
+});
+if($("dailyDetailPerson")) $("dailyDetailPerson").addEventListener("input", renderDailySpecificEval);
+if($("dailyDetailDate")) $("dailyDetailDate").addEventListener("input", renderDailySpecificEval);
+if($("dailyDetailBtn")) $("dailyDetailBtn").addEventListener("click", renderDailySpecificEval);
 $("secondaryYear").addEventListener("input", renderSecondaryRanking);
 $("secondaryBranch").addEventListener("input", renderSecondaryRanking);
 $("addTeamLeaderBtn").addEventListener("click", addTeamLeader);

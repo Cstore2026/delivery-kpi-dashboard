@@ -1006,7 +1006,7 @@ function evaluationNotesRows(records, type){
     .sort((a,b)=>(b.date || "").localeCompare(a.date || ""))
     .map((r,i)=>{
       const evaluator = type === "leader" ? (r.supervisor || "-") : leaderDisplayName(r.leader || "-");
-      const name = type === "leader" ? leaderDisplayName(r.name || "-") : (r.name || "-");
+      const name = type === "leader" ? leaderDisplayName(r.name || "-", r.branch || "") : (r.name || "-");
       return `<tr>
         <td>${i+1}</td>
         <td>${esc(r.date || "-")}</td>
@@ -1193,16 +1193,37 @@ function rawLeaderDisplayName(leaderName){
   return "";
 }
 
-function leaderDisplayName(leaderName){
+function leaderDisplayName(leaderName, branchContext=""){
   const s = String(leaderName || "").trim();
+  const ctxBranch = String(branchContext || "").trim();
   if(!s) return "";
 
   // 1) الاسم الداخلي المحدد من السوبر فايزر له الأولوية
   const direct = rawLeaderDisplayName(s);
   if(direct) return direct;
 
-  // 2) لو الاسم قديم بالشكل: تيم ليدر + الفرع، حاول نجيب يوزر التيم ليدر الحقيقي لنفس الفرع
-  const branch = getBranchFromLeader(s);
+  // 2) لو الاسم قديم بالشكل: تيم ليدر + فرع، متعرضش فرع قديم مع فرع حالي مختلف
+  const oldBranch = getBranchFromLeader(s);
+  if(isGenericLeaderName(s) && ctxBranch && oldBranch && oldBranch !== ctxBranch){
+    // حاول نجيب اسم حقيقي من نفس الفرع الحالي
+    const sameCurrentUser = Object.keys(USERS || {}).find(u =>
+      USERS[u] && USERS[u].role === "teamleader" &&
+      getBranchFromLeader(u) === ctxBranch &&
+      rawLeaderDisplayName(u)
+    );
+    if(sameCurrentUser) return rawLeaderDisplayName(sameCurrentUser);
+
+    const sameCurrentEval = (leaders || []).find(r =>
+      r && r.name && r.name !== s && r.branch === ctxBranch && rawLeaderDisplayName(r.name)
+    );
+    if(sameCurrentEval) return rawLeaderDisplayName(sameCurrentEval.name);
+
+    // لو مفيش اسم حقيقي محفوظ، اعرض اسم متوافق مع الفرع الحالي بدل الاسم القديم المضلل
+    return `تيم ليدر ${ctxBranch}`;
+  }
+
+  // 3) لو الاسم قديم بالشكل: تيم ليدر + الفرع، حاول نجيب يوزر التيم ليدر الحقيقي لنفس الفرع
+  const branch = oldBranch || ctxBranch;
   if(branch){
     const sameBranchUser = Object.keys(USERS || {}).find(u =>
       USERS[u] && USERS[u].role === "teamleader" &&
@@ -1218,7 +1239,8 @@ function leaderDisplayName(leaderName){
     if(sameBranchEval) return rawLeaderDisplayName(sameBranchEval.name);
   }
 
-  // 3) fallback لو مفيش اسم حقيقي محفوظ
+  // 4) fallback لو مفيش اسم حقيقي محفوظ
+  if(isGenericLeaderName(s) && ctxBranch) return `تيم ليدر ${ctxBranch}`;
   return s;
 }
 
@@ -2444,7 +2466,7 @@ function lowPerformerRows(pSum, lSum, type){
   }
   if(type !== "preparer"){
     [...lSum].sort((a,b)=>a.avg-b.avg).slice(0,3).forEach((r)=>{
-      rows.push({name:leaderDisplayName(r.name), branch:displayBranchForRanking(r,"leader"), avg:r.avg, mode:"تيم ليدر"});
+      rows.push({name:leaderDisplayName(r.name, displayBranchForRanking(r,"leader")), branch:displayBranchForRanking(r,"leader"), avg:r.avg, mode:"تيم ليدر"});
     });
   }
   return rows.sort((a,b)=>a.avg-b.avg).slice(0,6).map((r,i)=>`
@@ -2508,7 +2530,7 @@ function executiveLowData(pSum, lSum, type){
   }
   if(type !== "preparer"){
     [...lSum].sort((a,b)=>a.avg-b.avg).slice(0,3).forEach((r)=>{
-      rows.push({name:leaderDisplayName(r.name), branch:displayBranchForRanking(r,"leader"), avg:r.avg, mode:"تيم ليدر"});
+      rows.push({name:leaderDisplayName(r.name, displayBranchForRanking(r,"leader")), branch:displayBranchForRanking(r,"leader"), avg:r.avg, mode:"تيم ليدر"});
     });
   }
   return rows.sort((a,b)=>a.avg-b.avg).slice(0,6);
@@ -2657,7 +2679,7 @@ function renderView(){
 }
 function rankTable(summary, mode="preparer"){
   const rows=summary.map((r,i)=>{
-    const displayName = mode === "leader" ? leaderDisplayName(r.name) : r.name;
+    const displayName = mode === "leader" ? leaderDisplayName(r.name, r.branch || displayBranchForRanking(r,"leader")) : r.name;
     const points = r.maxTotal ? `${r.total}/${r.maxTotal}` : r.total;
     const displayBranch = displayBranchForRanking(r, mode);
     return `<tr><td>${i+1}</td><td>${esc(displayName)}</td><td>${esc(displayBranch)}</td><td><b>${points}</b></td><td>${r.days}</td><td>${r.avg}%</td><td>${badge(r.avg)}</td></tr>`;
@@ -2668,7 +2690,7 @@ function rankTable(summary, mode="preparer"){
 function executiveRows(summary, mode){
   if(!summary.length) return [];
   return summary.map((r,i)=>{
-    const displayName = mode === "leader" ? leaderDisplayName(r.name) : r.name;
+    const displayName = mode === "leader" ? leaderDisplayName(r.name, r.branch || displayBranchForRanking(r,"leader")) : r.name;
     const points = r.maxTotal ? `${r.total}/${r.maxTotal}` : r.total;
     return `
     <tr>
@@ -2739,7 +2761,7 @@ function dailyCriteriaDetails(record, type){
     <div class="grid grid-4">
       ${metric("التاريخ", esc(record.date || "-"))}
       ${metric("الفرع", esc(record.branch || "-"))}
-      ${metric(type === "leader" ? "السوبر فايزر" : "المقيّم", esc(type === "leader" ? (record.supervisor || "-") : leaderDisplayName(record.leader || "-")))}
+      ${metric(type === "leader" ? "السوبر فايزر" : "المقيّم", esc(type === "leader" ? (record.supervisor || "-") : leaderDisplayName(record.leader || "-", record.branch || "")))}
       ${metric("الإجمالي", `${num(record.total)} / ${max}`, `${num(record.percent)}%`)}
     </div>
     <div style="margin-top:12px">${table(["البند","الدرجة"], rows)}</div>
@@ -2767,7 +2789,7 @@ function updateDailyDetailPersons(){
         const leaderBranch = getBranchFromLeader(key) || ((leaders.find(r => r.name === key) || {}).branch || "");
         return leaderBranch === branch || leaders.some(r => r.name === key && r.branch === branch);
       })
-      .map(key => ({ value: key, label: leaderDisplayName(key) }))
+      .map(key => ({ value: key, label: leaderDisplayName(key, branch || getBranchFromLeader(key)) }))
       .sort((a,b) => a.label.localeCompare(b.label, 'ar'));
 
     $('dailyDetailPerson').innerHTML = `<option value="">اختر التيم ليدر</option>` +
@@ -2858,7 +2880,7 @@ function renderDailyFollowNotes(dateFrom, dateTo, selectedBranch){
         <td>${esc(r.date || '-')}</td>
         <td>${esc(r.branch || '-')}</td>
         <td>${esc(r.supervisor || '-')}</td>
-        <td>${esc(leaderDisplayName(r.name || '-'))}</td>
+        <td>${esc(leaderDisplayName(r.name || '-', r.branch || ''))}</td>
         <td>${esc(cleanNote(r.notes))}</td>
       </tr>
     `);

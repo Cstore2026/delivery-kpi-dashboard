@@ -366,31 +366,7 @@
           <div id="preparerNamesList" style="margin-top:12px"></div>
         </div>
 
-        <div class="grid grid-2" style="margin-top:14px">
-          <div class="criteria">
-            <div class="criteria-head">الالتزام والانضباط</div>
-            <div class="criteria-row"><b>الحضور والانصراف</b><select class="p-score" id="p1"><option>2</option><option>1</option><option>0</option></select></div>
-            <div class="criteria-row"><b>عدم وجود مخالفات إدارية</b><select class="p-score" id="p2"><option>2</option><option>1</option><option>0</option></select></div>
-          </div>
-          <div class="criteria">
-            <div class="criteria-head">سرعة وجودة التوصيل / التحضير</div>
-            <div class="criteria-row"><b>سرعة التحضير</b><select class="p-score" id="p3"><option>2</option><option>1</option><option>0</option></select></div>
-            <div class="criteria-row"><b>الحفاظ على جودة وسلامة المنتجات</b><select class="p-score" id="p4"><option>2</option><option>1</option><option>0</option></select></div>
-          </div>
-          <div class="criteria">
-            <div class="criteria-head">أسلوب التعامل والمظهر العام</div>
-            <div class="criteria-row"><b>الالتزام بالنظافة</b><select class="p-score" id="p5"><option>2</option><option>1</option><option>0</option></select></div>
-            <div class="criteria-row"><b>اللباقة والسلوك الشخصي</b><select class="p-score" id="p6"><option>2</option><option>1</option><option>0</option></select></div>
-            <div class="criteria-row"><b>المظهر الشخصي</b><select class="p-score" id="p7"><option>2</option><option>1</option><option>0</option></select></div>
-          </div>
-          <div class="criteria">
-            <div class="criteria-head">التعاون وروح الفريق</div>
-            <div class="criteria-row"><b>التعاون مع الزملاء</b><select class="p-score" id="p8"><option>2</option><option>1</option><option>0</option></select></div>
-            <div class="criteria-row"><b>الاستجابة للتوجيهات</b><select class="p-score" id="p9"><option>2</option><option>1</option><option>0</option></select></div>
-            <div class="criteria-row"><b>حل أي مشكلة بسرعة</b><select class="p-score" id="p10"><option>2</option><option>1</option><option>0</option></select></div>
-            <div class="criteria-row"><b>التعامل السريع مع المشاكل</b><select class="p-score" id="p11"><option>2</option><option>1</option><option>0</option></select></div>
-          </div>
-        </div>
+        <div id="preparerCriteriaBox" class="grid grid-2" style="margin-top:14px"></div>
 
         <div class="grid grid-4" style="margin-top:14px">
           <div class="score-box"><div class="label">إجمالي اليوم</div><div class="value" id="pTotal">22</div></div>
@@ -416,34 +392,7 @@
           </div>
         </div>
 
-        <div class="grid grid-2" style="margin-top:14px">
-          <div class="criteria">
-            <div class="criteria-head">نتائج الفرع</div>
-            <div class="criteria-row"><b>نتائج الفرع</b><select class="l-score" id="l1"><option>2</option><option>1</option><option>0</option></select></div>
-            <div class="criteria-row"><b>التقارير</b><select class="l-score" id="l2"><option>2</option><option>1</option><option>0</option></select></div>
-            <div class="criteria-row"><b>تطوير وتحفيز</b><select class="l-score" id="l3"><option>2</option><option>1</option><option>0</option></select></div>
-            <div class="criteria-row"><b>سرعة حل المشاكل</b><select class="l-score" id="l4"><option>2</option><option>1</option><option>0</option></select></div>
-          </div>
-          <div class="criteria">
-            <div class="criteria-head">التخطيط والتنظيم الإداري</div>
-            <div class="criteria-row"><b>تنظيم الأعمال والوقت</b><select class="l-score" id="l5"><option>2</option><option>1</option><option>0</option></select></div>
-            <div class="criteria-row"><b>الالتزام بالسياسات والتعليمات</b><select class="l-score" id="l6"><option>2</option><option>1</option><option>0</option></select></div>
-            <div class="criteria-row"><b>دور المتابعة اليومية</b><select class="l-score" id="l7"><option>2</option><option>1</option><option>0</option></select></div>
-          </div>
-          <div class="criteria">
-            <div class="criteria-head">تطوير وتحفيز الموظفين</div>
-            <div class="criteria-row"><b>تحسين روح الفريق</b><select class="l-score" id="l8"><option>2</option><option>1</option><option>0</option></select></div>
-            <div class="criteria-row"><b>الالتزام بالنظم</b><select class="l-score" id="l9"><option>2</option><option>1</option><option>0</option></select></div>
-            <div class="criteria-row"><b>متابعة وتحفيز الأفراد</b><select class="l-score" id="l10"><option>2</option><option>1</option><option>0</option></select></div>
-            <div class="criteria-row"><b>تدريب الموظفين الجدد</b><select class="l-score" id="l11"><option>2</option><option>1</option><option>0</option></select></div>
-          </div>
-          <div class="criteria">
-            <div class="criteria-head">سرعة حل المشاكل واتخاذ القرار</div>
-            <div class="criteria-row"><b>التعامل السريع مع شكاوى العملاء</b><select class="l-score" id="l12"><option>2</option><option>1</option><option>0</option></select></div>
-            <div class="criteria-row"><b>حل المشاكل بسرعة وكفاءة</b><select class="l-score" id="l13"><option>2</option><option>1</option><option>0</option></select></div>
-            <div class="criteria-row"><b>تقليل تأثير الأخطاء على الخدمة</b><select class="l-score" id="l14"><option>2</option><option>1</option><option>0</option></select></div>
-          </div>
-        </div>
+        <div id="leaderCriteriaBox" class="grid grid-2" style="margin-top:14px"></div>
 
         <div class="grid grid-4" style="margin-top:14px">
           <div class="score-box"><div class="label">إجمالي اليوم</div><div class="value" id="lTotal">28</div></div>
@@ -653,25 +602,57 @@
       </div>
 
       <div class="card" style="box-shadow:none;border-style:dashed;margin-top:18px">
-        <h3 style="margin-top:0">أسماء التيم ليدر داخل الداش</h3>
+        <h3 style="margin-top:0">إدارة أسماء التيم ليدر الحقيقية</h3>
         <p style="color:var(--muted);margin-top:-4px">
-          اسم الدخول يفضل كما هو، وهنا تقدر تحدد الاسم اللي يظهر داخل التقارير والجداول.
+          من هنا السوبر فايزر يحدد الاسم الحقيقي الثابت لكل تيم ليدر. بعد الحفظ، يظهر الاسم الحقيقي فقط في Ranking والتقارير والمتابعة، والفرع يظهر في عمود الفرع فقط.
         </p>
         <div class="grid grid-3">
           <div>
-            <label>يوزر التيم ليدر</label>
+            <label>التيم ليدر / الاسم المحفوظ تاريخيًا</label>
             <select id="internalLeaderUser"></select>
           </div>
           <div>
-            <label>الاسم الداخلي للتيم ليدر</label>
-            <input id="internalLeaderName" placeholder="مثال: أحمد محمد">
+            <label>الاسم الحقيقي الذي يظهر في التقارير</label>
+            <input id="internalLeaderName" placeholder="مثال: إبراهيم أكرم">
           </div>
           <div>
             <label>&nbsp;</label>
-            <button class="btn" type="button" id="saveInternalLeaderNameBtn">حفظ الاسم الداخلي</button>
+            <button class="btn" type="button" id="saveInternalLeaderNameBtn">حفظ الاسم الحقيقي</button>
           </div>
         </div>
         <div style="margin-top:14px" id="internalLeaderNamesTable"></div>
+      </div>
+
+
+
+      <div class="card" style="box-shadow:none;border-style:dashed;margin-top:18px">
+        <h3 style="margin-top:0">إدارة بنود التقييم</h3>
+        <p style="color:var(--muted);margin-top:-4px">
+          من هنا تقدر تعدل اسم أي بند أو تضيف بند جديد. تعديل الاسم يكمل على نفس التقييمات القديمة والجديدة، أما إضافة بند جديد فتظهر في التقييمات الجديدة فقط.
+        </p>
+        <div class="grid grid-2">
+          <div class="card" style="box-shadow:none;border-style:dashed">
+            <h3 style="margin-top:0">بنود تقييم المحضرين</h3>
+            <div id="preparerCriteriaSettings"></div>
+            <div class="grid grid-2" style="margin-top:12px">
+              <div><label>اسم بند جديد</label><input id="newPreparerCriterionLabel" placeholder="مثال: الالتزام بالزي"></div>
+              <div><label>القسم / المجموعة</label><input id="newPreparerCriterionGroup" placeholder="مثال: الالتزام والانضباط"></div>
+            </div>
+            <div class="actions"><button class="btn" type="button" id="addPreparerCriterionBtn">إضافة بند للمحضرين</button></div>
+          </div>
+          <div class="card" style="box-shadow:none;border-style:dashed">
+            <h3 style="margin-top:0">بنود تقييم التيم ليدر</h3>
+            <div id="leaderCriteriaSettings"></div>
+            <div class="grid grid-2" style="margin-top:12px">
+              <div><label>اسم بند جديد</label><input id="newLeaderCriterionLabel" placeholder="مثال: الالتزام بتسليم التقارير"></div>
+              <div><label>القسم / المجموعة</label><input id="newLeaderCriterionGroup" placeholder="مثال: التقارير والمتابعة"></div>
+            </div>
+            <div class="actions"><button class="btn" type="button" id="addLeaderCriterionBtn">إضافة بند للتيم ليدر</button></div>
+          </div>
+        </div>
+        <div style="margin-top:12px" class="role-note">
+          كل بند درجته من 0 إلى 2. تعديل اسم بند موجود لا يفصل التقييم القديم عن الجديد، لكن إضافة بند جديد يبدأ من التقييمات الجديدة فقط.
+        </div>
       </div>
 
       <div class="card" style="box-shadow:none;border-style:dashed;margin-top:18px">
@@ -813,7 +794,8 @@ const CLOUD_STORAGE_KEYS = [
   "kpi_leaders_v3",
   "kpi_preparer_names_v1",
   "kpi_activity_log_v1",
-  "kpi_transfer_log_v1"
+  "kpi_transfer_log_v1",
+  "kpi_eval_criteria_v1"
 ];
 let CLOUD_READY = false;
 let CLOUD_SAVE_TIMER = null;
@@ -891,6 +873,7 @@ function reloadStateFromLocalStorage(){
   preparerNames = JSON.parse(localStorage.getItem("kpi_preparer_names_v1") || "{}");
   activityLog = JSON.parse(localStorage.getItem("kpi_activity_log_v1") || "[]");
   transferLog = JSON.parse(localStorage.getItem("kpi_transfer_log_v1") || "[]");
+  loadCriteriaSettings();
   Object.keys(USERS).filter(u => USERS[u].role === "teamleader").forEach(name => {
     if(!preparerNames[name]) preparerNames[name] = [];
   });
@@ -983,7 +966,7 @@ function getCurrentBranchForPreparer(preparerName){
 }
 
 function displayBranchForRanking(row, mode){
-  if(mode === "leader") return getBranchFromLeader(row.name) || row.branch || "";
+  if(mode === "leader") return safeSingleBranch(row.currentBranch || getBranchFromLeader(row.name) || row.branch || "");
   if(mode === "preparer") return getCurrentBranchForPreparer(row.name) || row.branch || "";
   return row.branch || "";
 }
@@ -1020,7 +1003,7 @@ function evaluationNotesRows(records, type){
 
 
 
-const PREPARER_CRITERIA = [
+let PREPARER_CRITERIA = [
   {i:0, label:"الحضور والانصراف", group:"الالتزام والانضباط", solution:"تثبيت مواعيد واضحة ومتابعة الالتزام اليومي مع تنبيه مبكر عند التأخير."},
   {i:1, label:"عدم وجود مخالفات إدارية", group:"الالتزام والانضباط", solution:"مراجعة التعليمات الأساسية وتوضيح المخالفات المتكررة ومتابعتها لمدة أسبوع."},
   {i:2, label:"سرعة التحضير", group:"سرعة وجودة التحضير", solution:"تحديد سبب التأخير في أوقات الذروة وتوزيع المهام قبل الضغط."},
@@ -1033,7 +1016,7 @@ const PREPARER_CRITERIA = [
   {i:9, label:"حل أي مشكلة بسرعة", group:"حل المشاكل", solution:"تدريب الموظف على خطوات التعامل مع المشكلة وتصعيدها عند الحاجة."},
   {i:10, label:"التعامل السريع مع المشاكل", group:"حل المشاكل", solution:"تحديد سيناريوهات متكررة ووضع خطوات ثابتة للتعامل معها بسرعة."}
 ];
-const LEADER_CRITERIA = [
+let LEADER_CRITERIA = [
   {i:0, label:"نتائج الفرع", group:"نتائج الفرع", solution:"وضع هدف يومي واضح ومراجعة النتائج مع الفريق نهاية كل شيفت."},
   {i:1, label:"التقارير", group:"نتائج الفرع", solution:"تثبيت موعد يومي للتقارير ومراجعة اكتمال البيانات قبل الإرسال."},
   {i:2, label:"تطوير وتحفيز", group:"نتائج الفرع", solution:"تحديد موظف أو اثنين أسبوعيًا للتوجيه والتحفيز بناءً على الأداء."},
@@ -1049,6 +1032,109 @@ const LEADER_CRITERIA = [
   {i:12, label:"حل المشاكل بسرعة وكفاءة", group:"حل المشاكل واتخاذ القرار", solution:"تحديد صلاحيات واضحة للحل السريع وتصعيد ما يتجاوز الصلاحية."},
   {i:13, label:"تقليل تأثير الأخطاء", group:"حل المشاكل واتخاذ القرار", solution:"مراجعة الأخطاء المتكررة ووضع إجراء تصحيحي مباشر."}
 ];
+
+const CRITERIA_STORAGE_KEY = "kpi_eval_criteria_v1";
+const DEFAULT_PREPARER_CRITERIA = structuredClone(PREPARER_CRITERIA);
+const DEFAULT_LEADER_CRITERIA = structuredClone(LEADER_CRITERIA);
+function normalizeCriteriaList(list, defaults){
+  const base = Array.isArray(list) && list.length ? list : structuredClone(defaults);
+  return base.map((c, idx) => ({
+    id: c.id || `crit_${idx+1}`,
+    i: idx,
+    label: String(c.label || defaults[idx]?.label || `بند ${idx+1}`).trim(),
+    group: String(c.group || defaults[idx]?.group || "بنود إضافية").trim(),
+    solution: c.solution || defaults[idx]?.solution || "متابعة البند وتحديد سبب الانخفاض ووضع إجراء تصحيحي واضح."
+  }));
+}
+function loadCriteriaSettings(){
+  try{
+    const saved = JSON.parse(localStorage.getItem(CRITERIA_STORAGE_KEY) || "null");
+    PREPARER_CRITERIA = normalizeCriteriaList(saved?.preparer, DEFAULT_PREPARER_CRITERIA);
+    LEADER_CRITERIA = normalizeCriteriaList(saved?.leader, DEFAULT_LEADER_CRITERIA);
+  }catch(e){
+    PREPARER_CRITERIA = normalizeCriteriaList(null, DEFAULT_PREPARER_CRITERIA);
+    LEADER_CRITERIA = normalizeCriteriaList(null, DEFAULT_LEADER_CRITERIA);
+  }
+}
+function saveCriteriaSettings(){
+  PREPARER_CRITERIA = normalizeCriteriaList(PREPARER_CRITERIA, DEFAULT_PREPARER_CRITERIA);
+  LEADER_CRITERIA = normalizeCriteriaList(LEADER_CRITERIA, DEFAULT_LEADER_CRITERIA);
+  localStorage.setItem(CRITERIA_STORAGE_KEY, JSON.stringify({preparer: PREPARER_CRITERIA, leader: LEADER_CRITERIA}));
+  scheduleCloudSave();
+}
+function currentMax(type){
+  return (type === "leader" ? LEADER_CRITERIA.length : PREPARER_CRITERIA.length) * 2;
+}
+function recordMaxPoints(record, type){
+  if(record && Number(record.maxPoints)) return Number(record.maxPoints);
+  const len = (record && Array.isArray(record.scores)) ? record.scores.length : (type === "leader" ? 14 : 11);
+  return len * 2;
+}
+function scoreOptions(){ return `<option>2</option><option>1</option><option>0</option>`; }
+function renderCriteriaForms(){
+  const render = (boxId, defs, cls, prefix) => {
+    const box = $(boxId);
+    if(!box) return;
+    const groups = {};
+    defs.forEach((d, idx)=>{ (groups[d.group || "بنود التقييم"] ||= []).push({...d, idx}); });
+    box.innerHTML = Object.entries(groups).map(([group, items]) => `
+      <div class="criteria">
+        <div class="criteria-head">${esc(group)}</div>
+        ${items.map(item => `<div class="criteria-row"><b>${esc(item.label)}</b><select class="${cls}" id="${prefix}${item.idx+1}" data-index="${item.idx}">${scoreOptions()}</select></div>`).join("")}
+      </div>`).join("");
+    document.querySelectorAll(`.${cls}`).forEach(x=>x.addEventListener("input", cls === "p-score" ? calcPScores : calcLScores));
+  };
+  render("preparerCriteriaBox", PREPARER_CRITERIA, "p-score", "p");
+  render("leaderCriteriaBox", LEADER_CRITERIA, "l-score", "l");
+}
+function renderCriteriaSettings(){
+  const render = (boxId, defs, type) => {
+    const box = $(boxId);
+    if(!box) return;
+    const rows = defs.map((c, idx)=>`<tr>
+      <td>${idx+1}</td>
+      <td>${esc(c.group || "-")}</td>
+      <td><input data-criteria-type="${type}" data-criteria-index="${idx}" value="${esc(c.label)}"></td>
+    </tr>`);
+    box.innerHTML = table(["#","القسم","اسم البند"], rows) + `<div class="actions"><button class="btn light" type="button" onclick="saveCriteriaLabels('${type}')">حفظ تعديل أسماء البنود</button></div>`;
+  };
+  render("preparerCriteriaSettings", PREPARER_CRITERIA, "preparer");
+  render("leaderCriteriaSettings", LEADER_CRITERIA, "leader");
+}
+function saveCriteriaLabels(type){
+  const defs = type === "leader" ? LEADER_CRITERIA : PREPARER_CRITERIA;
+  document.querySelectorAll(`input[data-criteria-type="${type}"]`).forEach(inp=>{
+    const idx = Number(inp.dataset.criteriaIndex);
+    const val = String(inp.value || "").trim();
+    if(defs[idx] && val) defs[idx].label = val;
+  });
+  saveCriteriaSettings();
+  renderCriteriaForms();
+  renderCriteriaSettings();
+  calcPScores(); calcLScores();
+  addActivity("تعديل بنود التقييم", type === "leader" ? "تم تعديل أسماء بنود تقييم التيم ليدر" : "تم تعديل أسماء بنود تقييم المحضرين");
+  alert("تم حفظ تعديل أسماء البنود");
+}
+function addNewCriterion(type){
+  const isLeader = type === "leader";
+  const labelEl = $(isLeader ? "newLeaderCriterionLabel" : "newPreparerCriterionLabel");
+  const groupEl = $(isLeader ? "newLeaderCriterionGroup" : "newPreparerCriterionGroup");
+  const label = String(labelEl?.value || "").trim();
+  const group = String(groupEl?.value || "").trim() || "بنود إضافية";
+  if(!label){ alert("اكتب اسم البند الجديد"); return; }
+  const defs = isLeader ? LEADER_CRITERIA : PREPARER_CRITERIA;
+  defs.push({id:`custom_${Date.now()}`, i: defs.length, label, group, solution:"متابعة البند وتحديد سبب الانخفاض ووضع إجراء تصحيحي واضح."});
+  if(labelEl) labelEl.value = "";
+  if(groupEl) groupEl.value = "";
+  saveCriteriaSettings();
+  renderCriteriaForms();
+  renderCriteriaSettings();
+  calcPScores(); calcLScores();
+  addActivity("إضافة بند تقييم", `${isLeader ? "تيم ليدر" : "محضر"}: ${label}`);
+  alert("تم إضافة البند الجديد وسيظهر في التقييمات الجديدة فقط");
+}
+loadCriteriaSettings();
+
 function smartStatus(pct){
   if(pct >= 85) return "ممتاز";
   if(pct >= 75) return "جيد جدًا";
@@ -1058,9 +1144,11 @@ function smartStatus(pct){
 }
 function criteriaStats(records, defs){
   return defs.map(d=>{
-    const vals = records.map(r => Number((r.scores || [])[d.i] || 0));
+    const vals = records
+      .filter(r => Array.isArray(r.scores) && typeof r.scores[d.i] !== "undefined")
+      .map(r => Number((r.scores || [])[d.i] || 0));
     const avgScore = vals.length ? vals.reduce((a,b)=>a+b,0) / vals.length : 0;
-    return {...d, avgScore, pct: Math.round((avgScore / 2) * 100)};
+    return {...d, avgScore, pct: vals.length ? Math.round((avgScore / 2) * 100) : 0};
   });
 }
 function groupCriteriaStats(stats){
@@ -1139,12 +1227,13 @@ function renderSmartPersonReport(pData, lData, month, branch, viewType){
     return;
   }
   const defs = type === "leader" ? LEADER_CRITERIA : PREPARER_CRITERIA;
-  const maxDaily = type === "leader" ? MAX_L : MAX_P;
+  const maxDaily = records.length ? records.reduce((a,r)=>a+recordMaxPoints(r,type),0) / records.length : currentMax(type);
   const isGeneralReport = !person;
   const displayName = isGeneralReport ? "تقرير عام" : (type === "leader" ? leaderDisplayName(person) : person);
   const currentBranch = isGeneralReport ? (branch || "كل الفروع") : (type === "leader" ? (getBranchFromLeader(person) || records[records.length-1].branch || "-") : (getCurrentBranchForPreparer(person) || records[records.length-1].branch || "-"));
   const total = sum(records, "total");
-  const overallPct = records.length ? Math.round((total / (records.length * maxDaily)) * 100) : 0;
+  const maxPossible = records.reduce((a,r)=>a+recordMaxPoints(r,type),0);
+  const overallPct = maxPossible ? Math.round((total / maxPossible) * 100) : 0;
   const stats = criteriaStats(records, defs).sort((a,b)=>b.pct-a.pct);
   const strengths = stats.filter(s=>s.pct>=75).slice(0,4).map(s=>`${s.label} (${s.pct}%)`);
   const weakStats = [...stats].sort((a,b)=>a.pct-b.pct).slice(0,4);
@@ -1184,6 +1273,28 @@ function isGenericLeaderName(name){
   return /^تيم\s*ليدر/.test(s);
 }
 
+function leaderNameIdsForSettings(){
+  return [...new Set([
+    ...Object.keys(USERS || {}).filter(u => USERS[u] && USERS[u].role === "teamleader"),
+    ...(leaders || []).map(r => r.name).filter(Boolean),
+    ...Object.keys(BRANCH_BY_LEADER || {})
+  ].filter(Boolean))].sort((a,b)=>a.localeCompare(b));
+}
+
+function safeSingleBranch(branchValue){
+  const s = String(branchValue || "").trim();
+  if(!s) return "";
+  const parts = s.split("/").map(x=>x.trim()).filter(Boolean);
+  return parts.length ? parts[parts.length - 1] : s;
+}
+
+function canonicalLeaderKey(record){
+  const rawName = String(record && record.name || "").trim();
+  const real = rawLeaderDisplayName(rawName);
+  if(real) return real;
+  return rawName;
+}
+
 function rawLeaderDisplayName(leaderName){
   const s = String(leaderName || "").trim();
   if(!s) return "";
@@ -1195,7 +1306,7 @@ function rawLeaderDisplayName(leaderName){
 
 function leaderDisplayName(leaderName, branchContext=""){
   const s = String(leaderName || "").trim();
-  const ctxBranch = String(branchContext || "").trim();
+  const ctxBranch = safeSingleBranch(branchContext);
   if(!s) return "";
 
   // 1) الاسم الداخلي المحدد من السوبر فايزر له الأولوية
@@ -1694,30 +1805,35 @@ function renderTransferControls(){
 
 
 function renderInternalLeaderControls(){
-  if(!$("internalLeaderUser")) return;
+  if(!$('internalLeaderUser')) return;
 
-  const leaders = getTeamLeaders();
-  const old = $("internalLeaderUser").value;
+  const ids = leaderNameIdsForSettings();
+  const old = $('internalLeaderUser').value;
 
-  $("internalLeaderUser").innerHTML = leaders.map(name => {
-    const display = leaderDisplayName(name);
-    return `<option value="${esc(name)}">${esc(name)}${display !== name ? " - " + esc(display) : ""}</option>`;
-  }).join("");
+  $('internalLeaderUser').innerHTML = ids.map(name => {
+    const real = LEADER_INTERNAL_NAMES[name] || '';
+    const branch = safeSingleBranch(getBranchFromLeader(name) || (leaders.find(r=>r.name===name)?.branch || ''));
+    const label = `${name}${branch ? ' | ' + branch : ''}${real ? ' ← ' + real : ''}`;
+    return `<option value="${esc(name)}">${esc(label)}</option>`;
+  }).join('');
 
-  if(leaders.includes(old)) $("internalLeaderUser").value = old;
+  if(ids.includes(old)) $('internalLeaderUser').value = old;
 
-  const selected = $("internalLeaderUser").value;
-  $("internalLeaderName").value = LEADER_INTERNAL_NAMES[selected] || "";
+  const selected = $('internalLeaderUser').value;
+  $('internalLeaderName').value = LEADER_INTERNAL_NAMES[selected] || '';
 
-  const rows = leaders.map((name, i) => `
-    <tr>
+  const rows = ids.map((name, i) => {
+    const branch = safeSingleBranch(getBranchFromLeader(name) || (leaders.find(r=>r.name===name)?.branch || '-'));
+    const saved = LEADER_INTERNAL_NAMES[name] || '-';
+    return `<tr>
       <td>${i+1}</td>
       <td>${esc(name)}</td>
-      <td>${esc(LEADER_INTERNAL_NAMES[name] || "-")}</td>
-    </tr>
-  `);
+      <td>${esc(branch || '-')}</td>
+      <td>${esc(saved)}</td>
+    </tr>`;
+  });
 
-  $("internalLeaderNamesTable").innerHTML = table(["#","اسم الدخول","الاسم داخل الداش"], rows);
+  $('internalLeaderNamesTable').innerHTML = table(['#','الاسم/اليوزر المحفوظ','الفرع الحالي/آخر فرع','الاسم الحقيقي داخل التقارير'], rows);
 }
 
 function saveInternalLeaderName(){
@@ -1736,14 +1852,14 @@ function saveInternalLeaderName(){
   }
 
   saveLeaderInternalNames();
-  addActivity("تعديل اسم داخلي", `يوزر: ${user} | الاسم الداخلي: ${internalName || "تم مسحه"}`);
+  addActivity("تعديل اسم تيم ليدر حقيقي", `يوزر/اسم محفوظ: ${user} | الاسم الحقيقي: ${internalName || "تم مسحه"}`);
 
   renderInternalLeaderControls();
   renderTeamLeaderControls();
   renderTransferControls();
   renderAll();
 
-  alert("تم حفظ الاسم الداخلي بنجاح");
+  alert("تم حفظ الاسم الحقيقي بنجاح");
 }
 
 function renderTransferPreparerNames(){
@@ -1993,12 +2109,12 @@ function deletePreparerName(leader, name){
 
 function calcPScores(){
   const scores=[...document.querySelectorAll(".p-score")].map(x=>num(x.value));
-  const total=scores.reduce((a,b)=>a+b,0), p=percent(total,MAX_P);
+  const total=scores.reduce((a,b)=>a+b,0), p=percent(total,currentMax("preparer"));
   $("pTotal").textContent=total; $("pPercent").textContent=p+"%";
 }
 function calcLScores(){
   const scores=[...document.querySelectorAll(".l-score")].map(x=>num(x.value));
-  const total=scores.reduce((a,b)=>a+b,0), p=percent(total,MAX_L);
+  const total=scores.reduce((a,b)=>a+b,0), p=percent(total,currentMax("leader"));
   $("lTotal").textContent=total; $("lPercent").textContent=p+"%";
 }
 document.querySelectorAll(".p-score").forEach(x=>x.addEventListener("input",calcPScores));
@@ -2204,7 +2320,8 @@ $("preparerForm").onsubmit=e=>{
     name: name,
     scores,
     total,
-    percent: percent(total,MAX_P),
+    maxPoints: currentMax("preparer"),
+    percent: percent(total,currentMax("preparer")),
     notes: $("pNotes").value.trim(),
     leave: scores.every(s=>s===0) && /إجازة/.test($("pNotes").value),
     updatedBy: isUpdate ? currentUser : "",
@@ -2283,7 +2400,8 @@ $("leaderForm").onsubmit=e=>{
     name: name,
     scores,
     total,
-    percent: percent(total,MAX_L),
+    maxPoints: currentMax("leader"),
+    percent: percent(total,currentMax("leader")),
     notes: $("lNotes").value.trim(),
     leave: scores.every(s=>s===0) && /إجازة/.test($("lNotes").value),
     updatedBy: isUpdate ? currentUser : "",
@@ -2312,9 +2430,13 @@ $("leaderForm").onsubmit=e=>{
   renderAll();
 };
 
-function groupSummary(list, max){
+function groupSummary(list, max, mode="preparer"){
   const g={};
-  list.forEach(r=>{g[r.name]??=[];g[r.name].push(r)});
+  list.forEach(r=>{
+    const key = mode === "leader" ? canonicalLeaderKey(r) : r.name;
+    g[key]??=[];
+    g[key].push(r);
+  });
   return Object.entries(g).map(([name,arr])=>{
     const totalPoints = sum(arr,"total");
 
@@ -2332,6 +2454,7 @@ function groupSummary(list, max){
     return {
       name,
       branch:[...new Set(arr.map(x=>x.branch))].join(" / "),
+      currentBranch: arr.slice().sort((a,b)=>(a.date || "").localeCompare(b.date || ""))[arr.length-1]?.branch || "",
       days:arr.length,
       total:totalPoints,
       maxTotal:maxPoints,
@@ -2648,7 +2771,7 @@ function renderView(){
 
   const pData=filterBy(preparers,month,branch);
   const lData=filterBy(leaders,month,branch);
-  const pSum=groupSummary(pData,MAX_P), lSum=groupSummary(lData,MAX_L);
+  const pSum=groupSummary(pData,MAX_P,"preparer"), lSum=groupSummary(lData,MAX_L,"leader");
   renderExecutiveIndicators(pData, lData, pSum, lSum, month, branch, type);
   renderViewNotes(pData, lData, type);
   renderSmartPersonReport(pData, lData, month, branch, type);
@@ -2754,8 +2877,8 @@ function renderExecutiveReport(pSum, lSum, month, branch){
 
 function dailyCriteriaDetails(record, type){
   const defs = type === "leader" ? LEADER_CRITERIA : PREPARER_CRITERIA;
-  const max = type === "leader" ? MAX_L : MAX_P;
-  const rows = defs.map((d, idx)=>`<tr><td>${esc(d.label)}</td><td>${num((record.scores||[])[idx])}</td></tr>`);
+  const max = recordMaxPoints(record, type);
+  const rows = defs.filter((d, idx)=>Array.isArray(record.scores) && typeof record.scores[idx] !== "undefined").map((d, idx)=>`<tr><td>${esc(d.label)}</td><td>${num((record.scores||[])[idx])}</td></tr>`);
   const noteRow = currentRole === "supervisor" ? `<div class="role-note" style="margin-top:10px">الملاحظة: ${esc(cleanNote(record.notes || "-"))}</div>` : "";
   return `
     <div class="grid grid-4">
@@ -3119,14 +3242,14 @@ function renderSecondaryRanking(){
       monthOf(r.date) === monthKey && (!selectedBranch || r.branch === selectedBranch)
     );
 
-    const prepSummary = groupSummary(monthPreparers, MAX_P).sort((a,b)=>
+    const prepSummary = groupSummary(monthPreparers, MAX_P, "preparer").sort((a,b)=>
       (b.total - a.total) ||
       (b.avg - a.avg) ||
       (b.days - a.days) ||
       a.name.localeCompare(b.name)
     );
 
-    const leadSummary = groupSummary(monthLeaders, MAX_L).sort((a,b)=>
+    const leadSummary = groupSummary(monthLeaders, MAX_L, "leader").sort((a,b)=>
       (b.total - a.total) ||
       (b.avg - a.avg) ||
       (b.days - a.days) ||
@@ -3154,12 +3277,12 @@ function renderSecondaryRanking(){
       leaderCounts[leaderKey] ||= {
         name: leaderKey,
         displayName: leaderDisplayName(leaderKey),
-        branch: getBranchFromLeader(leaderKey) || firstLeader.branch,
+        branch: displayBranchForRanking(firstLeader, "leader"),
         first:0
       };
       leaderCounts[leaderKey].first += 1;
       leaderCounts[leaderKey].displayName = leaderDisplayName(leaderKey);
-      leaderCounts[leaderKey].branch = getBranchFromLeader(leaderKey) || firstLeader.branch;
+      leaderCounts[leaderKey].branch = displayBranchForRanking(firstLeader, "leader");
     }
 
     monthlyRows.push(`
@@ -3278,7 +3401,7 @@ function renderAllTables(){
       <td>${esc(r.branch)}</td>
       <td>${esc(leaderDisplayName(r.leader))}</td>
       <td>${esc(r.name)}</td>
-      <td>${r.total}/${MAX_P}</td>
+      <td>${r.total}/${recordMaxPoints(r,"preparer")}</td>
       <td><b>${r.percent}%</b></td>
       <td>${badge(r.percent)}</td>
       <td>${esc(r.notes)}</td>
@@ -3294,7 +3417,7 @@ function renderAllTables(){
       <td>${esc(r.branch)}</td>
       <td>${esc(r.supervisor)}</td>
       <td>${esc(leaderDisplayName(r.name))}</td>
-      <td>${r.total}/${MAX_L}</td>
+      <td>${r.total}/${recordMaxPoints(r,"leader")}</td>
       <td><b>${r.percent}%</b></td>
       <td>${badge(r.percent)}</td>
       <td>${esc(r.notes)}</td>
@@ -3390,6 +3513,9 @@ $("exportBtn").onclick=()=>{
   const blob=new Blob(["\uFEFF"+lines.join("\n")],{type:"text/csv;charset=utf-8"});
   const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="delivery-kpi-data.csv";a.click();
 };
+if($("addPreparerCriterionBtn")) $("addPreparerCriterionBtn").addEventListener("click", ()=>addNewCriterion("preparer"));
+if($("addLeaderCriterionBtn")) $("addLeaderCriterionBtn").addEventListener("click", ()=>addNewCriterion("leader"));
+
 async function startApp(){
   await initCloudStorage();
   renderLoginUsers();
@@ -3403,6 +3529,8 @@ async function startApp(){
   renderPasswordUsers();
   renderLoginUsersManagement();
   renderBranchesManagement();
+  renderCriteriaForms();
+  renderCriteriaSettings();
   calcPScores(); calcLScores();
 }
 startApp();

@@ -1375,9 +1375,16 @@ getTeamLeaders().forEach(name => {
   if(!preparerNames[name]) preparerNames[name] = [];
 });
 const $ = id => document.getElementById(id);
-const today = () => new Date().toISOString().slice(0,10);
-const monthNow = () => new Date().toISOString().slice(0,7);
-["pDate","lDate","dailyFollowDateFrom","dailyFollowDateTo","dailyDetailDate"].forEach(id=>{ if($(id)) $(id).value=today(); });
+const today = () => {
+  const d = new Date();
+  return d.getFullYear() + "-" +
+    String(d.getMonth() + 1).padStart(2, "0") + "-" +
+    String(d.getDate()).padStart(2, "0");
+const monthNow = () => {
+  const d = new Date();
+  return d.getFullYear() + "-" +
+    String(d.getMonth() + 1).padStart(2, "0");
+};["pDate","lDate","dailyFollowDateFrom","dailyFollowDateTo","dailyDetailDate"].forEach(id=>{ if($(id)) $(id).value=today(); });
 ["viewMonth"].forEach(id=>$(id).value=monthNow());
 
 function save(){
@@ -3038,8 +3045,11 @@ function getDatesInRange(dateFrom, dateTo){
   const end = new Date(dateTo + "T00:00:00");
 
   while(current <= end){
-    dates.push(current.toISOString().slice(0,10));
-    current.setDate(current.getDate() + 1);
+dates.push(
+  current.getFullYear() + "-" +
+  String(current.getMonth() + 1).padStart(2, "0") + "-" +
+  String(current.getDate()).padStart(2, "0")
+);    current.setDate(current.getDate() + 1);
   }
 
   return dates;

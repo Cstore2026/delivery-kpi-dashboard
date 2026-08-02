@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>KPI Dashboard - Delivery Team V55.16.1</title>
+  <title>KPI Dashboard - Delivery Team V60.2 Safe</title>
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#c2185b">
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -513,6 +513,25 @@
   <section id="settingsTab" class="tab-section hidden">
     <div class="card">
       <h2>إعدادات الداش</h2>
+
+      <div class="card" id="dataSafetyCard" style="box-shadow:none;border-style:dashed;margin-bottom:18px">
+        <h3 style="margin:0 0 14px">🛡️ أمان البيانات</h3>
+        <div class="grid grid-3">
+          <div class="score-box"><div class="label">حالة الاتصال</div><div class="value" id="cloudConnectionStatus" style="font-size:18px">جاري الفحص...</div></div>
+          <div class="score-box"><div class="label">آخر Backup</div><div class="value" id="lastOnlineBackup" style="font-size:16px">لا توجد نسخة بعد</div></div>
+          <div class="score-box"><div class="label">النسخة القادمة</div><div class="value" id="nextOnlineBackup" style="font-size:16px">بعد أول تشغيل</div></div>
+        </div>
+        <div class="actions" style="justify-content:center">
+          <button class="btn" type="button" id="createOnlineBackupBtn">إنشاء Backup الآن</button>
+          <button class="btn dark" type="button" id="restoreLastOnlineBackupBtn">استرجاع آخر Backup</button>
+          <button class="btn light" type="button" id="downloadLastOnlineBackupBtn">تنزيل آخر Backup</button>
+        </div>
+        <input type="file" id="restoreFile" accept="application/json,.json" class="hidden">
+        <div class="actions" style="justify-content:center;margin-top:6px">
+          <button class="btn light" type="button" id="backupBtn">تنزيل نسخة حالية من الجهاز</button>
+          <button class="btn light" type="button" id="chooseRestoreFileBtn">دمج ملف Backup من الجهاز</button>
+        </div>
+      </div>
       <p style="color:var(--muted);margin-top:-6px">الصفحة دي تظهر للسوبر فايزر فقط.</p>
 
       <div class="grid grid-2">
@@ -785,6 +804,8 @@ const MONTHLY_LEADER_MAX = 840;
 const SUPABASE_URL = "https://hgybmvcnwdsacskwwzvj.supabase.co";
 const SUPABASE_KEY = "sb_publishable_bEnd7r_X_3OythYvVD7iHQ_zxrQ_BkL";
 const CLOUD_ROW_KEY = "app_state";
+const BACKUP_PREFIX = "app_state_backup_";
+const AUTO_BACKUP_DAYS = 10;
 const CLOUD_STORAGE_KEYS = [
   "kpi_users_v1",
   "kpi_branch_by_leader_v1",
@@ -800,6 +821,8 @@ const CLOUD_STORAGE_KEYS = [
 let CLOUD_READY = false;
 let CLOUD_SAVE_TIMER = null;
 let CLOUD_LAST_SYNC = "";
+let CLOUD_SAVING = false;
+let LAST_BACKUP_ROW = null;
 function cloudHeaders(extra={}){
   return Object.assign({
     "apikey": SUPABASE_KEY,
@@ -807,59 +830,210 @@ function cloudHeaders(extra={}){
     "Content-Type": "application/json"
   }, extra);
 }
+function safeJson(value, fallback){
+  try{return JSON.parse(value);}catch(_){return fallback;}
+}
 function collectCloudState(){
   const out = {};
   CLOUD_STORAGE_KEYS.forEach(k => out[k] = localStorage.getItem(k));
+  out.__meta = JSON.stringify({savedAt:new Date().toISOString(), savedBy:currentUser || "system"});
+  return out;
+}
+function recordStamp(r){
+  const t = Date.parse(r && r.updatedAt || "");
+  if(Number.isFinite(t)) return t;
+  const id = Number(r && r.id);
+  return Number.isFinite(id) ? id : 0;
+}
+function recordKey(r, type){
+  if(r && r.id !== undefined && r.id !== null) return "id:" + String(r.id);
+  return [type, r && r.date, r && r.branch, r && r.leader, r && r.supervisor, r && r.name].join("|");
+}
+function mergeRecordArrays(remoteArr, localArr, type){
+  const map = new Map();
+  [...(remoteArr||[]), ...(localArr||[])].forEach(r=>{
+    if(!r || typeof r !== "object") return;
+    const k=recordKey(r,type), old=map.get(k);
+    if(!old || recordStamp(r) >= recordStamp(old)) map.set(k,r);
+  });
+  return [...map.values()];
+}
+function mergeById(remoteArr, localArr){
+  const map=new Map();
+  [...(remoteArr||[]), ...(localArr||[])].forEach(r=>{
+    if(!r || typeof r!=="object") return;
+    const k=String(r.id ?? JSON.stringify(r));
+    if(!map.has(k)) map.set(k,r);
+  });
+  return [...map.values()];
+}
+function mergeNameMaps(remoteObj, localObj){
+  const out={...(remoteObj||{})};
+  Object.entries(localObj||{}).forEach(([k,v])=>{
+    if(Array.isArray(v)) out[k]=[...new Set([...(out[k]||[]),...v])];
+    else if(!(k in out)) out[k]=v;
+  });
+  return out;
+}
+function mergeCloudStates(remoteState, localState){
+  const out={...(remoteState||{})};
+  CLOUD_STORAGE_KEYS.forEach(k=>{
+    const rv=remoteState && remoteState[k], lv=localState && localState[k];
+    if(lv == null){ if(rv != null) out[k]=rv; return; }
+    if(rv == null){ out[k]=lv; return; }
+    if(k === "kpi_preparers_v3") out[k]=JSON.stringify(mergeRecordArrays(safeJson(rv,[]),safeJson(lv,[]),"preparer"));
+    else if(k === "kpi_leaders_v3") out[k]=JSON.stringify(mergeRecordArrays(safeJson(rv,[]),safeJson(lv,[]),"leader"));
+    else if(k === "kpi_activity_log_v1" || k === "kpi_transfer_log_v1") out[k]=JSON.stringify(mergeById(safeJson(rv,[]),safeJson(lv,[])));
+    else if(k === "kpi_preparer_names_v1") out[k]=JSON.stringify(mergeNameMaps(safeJson(rv,{}),safeJson(lv,{})));
+    else {
+      // إعدادات السيرفر هي المرجع عند وجودها؛ لا نستبدلها بنسخة جهاز قديمة عند مجرد الفتح.
+      out[k]=rv;
+    }
+  });
+  out.__meta=JSON.stringify({savedAt:new Date().toISOString(),savedBy:currentUser||"system"});
   return out;
 }
 function applyCloudState(state){
   if(!state || typeof state !== "object") return false;
   CLOUD_STORAGE_KEYS.forEach(k => {
-    if(Object.prototype.hasOwnProperty.call(state,k) && state[k] !== null && typeof state[k] !== "undefined"){
-      localStorage.setItem(k, String(state[k]));
-    }
+    if(Object.prototype.hasOwnProperty.call(state,k) && state[k] !== null && typeof state[k] !== "undefined") localStorage.setItem(k,String(state[k]));
   });
   return true;
 }
+async function fetchCloudRow(key){
+  const res=await fetch(`${SUPABASE_URL}/rest/v1/kpi_store?key=eq.${encodeURIComponent(key)}&select=key,value,updated_at`,{headers:cloudHeaders({"Accept":"application/json"})});
+  if(!res.ok) throw new Error(await res.text());
+  const rows=await res.json();
+  return rows && rows[0] ? rows[0] : null;
+}
+async function upsertCloudRow(key,value){
+  const res=await fetch(`${SUPABASE_URL}/rest/v1/kpi_store?on_conflict=key`,{
+    method:"POST",headers:cloudHeaders({"Prefer":"resolution=merge-duplicates,return=minimal"}),body:JSON.stringify({key,value})
+  });
+  if(!res.ok) throw new Error(await res.text());
+}
+function setCloudStatus(text,ok=true){
+  const el=document.getElementById("cloudConnectionStatus");
+  if(el){el.textContent=text;el.style.color=ok?"var(--green)":"var(--red)";}
+}
+function toast(message,ok=true){
+  let el=document.getElementById("safeToast");
+  if(!el){el=document.createElement("div");el.id="safeToast";el.style.cssText="position:fixed;left:18px;bottom:18px;z-index:99999;max-width:420px;padding:12px 16px;border-radius:14px;color:white;font-weight:900;box-shadow:0 10px 30px rgba(0,0,0,.25);display:none";document.body.appendChild(el);}
+  el.textContent=message;el.style.background=ok?"#15803d":"#ad1457";el.style.display="block";clearTimeout(el._t);el._t=setTimeout(()=>el.style.display="none",4500);
+}
 async function loadCloudState(){
   try{
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/kpi_store?key=eq.${encodeURIComponent(CLOUD_ROW_KEY)}&select=value`, {
-      headers: cloudHeaders({"Accept":"application/json"})
-    });
-    if(!res.ok) throw new Error(await res.text());
-    const rows = await res.json();
-    if(rows && rows[0] && rows[0].value){
-      const remoteState = JSON.parse(rows[0].value);
-      applyCloudState(remoteState);
-      CLOUD_LAST_SYNC = rows[0].value;
+    const row=await fetchCloudRow(CLOUD_ROW_KEY);
+    if(row && row.value){
+      const remoteState=safeJson(row.value,{});
+      const merged=mergeCloudStates(remoteState,collectCloudState());
+      applyCloudState(merged);
+      CLOUD_LAST_SYNC=JSON.stringify(merged);
+      setCloudStatus("متصل ✓",true);
       return true;
     }
-  }catch(err){
-    console.warn("Supabase load failed", err);
-  }
+    setCloudStatus("متصل ✓",true);
+  }catch(err){console.warn("Supabase load failed",err);setCloudStatus("غير متصل",false);}
   return false;
 }
 async function saveCloudStateNow(){
-  if(!CLOUD_READY) return;
+  if(!CLOUD_READY || CLOUD_SAVING) return;
+  CLOUD_SAVING=true;
   try{
-    const value = JSON.stringify(collectCloudState());
-    if(value === CLOUD_LAST_SYNC) return;
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/kpi_store?on_conflict=key`, {
-      method: "POST",
-      headers: cloudHeaders({"Prefer":"resolution=merge-duplicates"}),
-      body: JSON.stringify({key:CLOUD_ROW_KEY, value})
-    });
-    if(!res.ok) throw new Error(await res.text());
-    CLOUD_LAST_SYNC = value;
+    setCloudStatus("جاري الحفظ...",true);
+    const remoteRow=await fetchCloudRow(CLOUD_ROW_KEY);
+    const remote=remoteRow && remoteRow.value ? safeJson(remoteRow.value,{}) : {};
+    const merged=mergeCloudStates(remote,collectCloudState());
+    const value=JSON.stringify(merged);
+    if(value !== CLOUD_LAST_SYNC){
+      await upsertCloudRow(CLOUD_ROW_KEY,value);
+      CLOUD_LAST_SYNC=value;
+      applyCloudState(merged);
+    }
+    setCloudStatus("متصل ✓",true);
   }catch(err){
-    console.warn("Supabase save failed", err);
-    alert("تعذر حفظ البيانات أونلاين مؤقتًا. سيتم الاحتفاظ بها على هذا الجهاز لحين المحاولة مرة أخرى.");
-  }
+    console.warn("Supabase save failed",err);setCloudStatus("تعذر الحفظ",false);toast("تعذر الحفظ أونلاين. البيانات ما زالت محفوظة على الجهاز ولم يتم حذف بيانات السيرفر.",false);
+  }finally{CLOUD_SAVING=false;}
 }
 function scheduleCloudSave(){
   if(!CLOUD_READY) return;
   clearTimeout(CLOUD_SAVE_TIMER);
-  CLOUD_SAVE_TIMER = setTimeout(saveCloudStateNow, 600);
+  CLOUD_SAVE_TIMER=setTimeout(saveCloudStateNow,900);
+}
+function backupKeyNow(){return BACKUP_PREFIX + new Date().toISOString().replace(/[:.]/g,"-");}
+async function createOnlineBackup(kind="manual"){
+  try{
+    setCloudStatus("إنشاء Backup...",true);
+    const row=await fetchCloudRow(CLOUD_ROW_KEY);
+    const state=row && row.value ? row.value : JSON.stringify(collectCloudState());
+    const payload=JSON.stringify({kind,createdAt:new Date().toISOString(),createdBy:currentUser||"system",state:safeJson(state,{})});
+    await upsertCloudRow(backupKeyNow(),payload);
+    localStorage.setItem("kpi_last_auto_backup_at",new Date().toISOString());
+    await refreshBackupSummary();
+    setCloudStatus("متصل ✓",true);toast("تم إنشاء Backup أونلاين بنجاح.",true);
+    return true;
+  }catch(err){console.warn("Backup failed",err);setCloudStatus("تعذر إنشاء Backup",false);toast("تعذر إنشاء Backup أونلاين.",false);return false;}
+}
+async function fetchLatestBackup(){
+  const res=await fetch(`${SUPABASE_URL}/rest/v1/kpi_store?key=like.${encodeURIComponent(BACKUP_PREFIX+'*')}&select=key,value,updated_at&order=updated_at.desc&limit=1`,{headers:cloudHeaders({"Accept":"application/json"})});
+  if(!res.ok) throw new Error(await res.text());
+  const rows=await res.json();return rows&&rows[0]?rows[0]:null;
+}
+function formatBackupDate(v){
+  if(!v) return "لا توجد نسخة بعد";
+  const d=new Date(v);return Number.isNaN(d.getTime())?v:d.toLocaleString("ar-EG");
+}
+async function refreshBackupSummary(){
+  try{
+    LAST_BACKUP_ROW=await fetchLatestBackup();
+    const last=document.getElementById("lastOnlineBackup"), next=document.getElementById("nextOnlineBackup");
+    if(last) last.textContent=LAST_BACKUP_ROW?formatBackupDate(LAST_BACKUP_ROW.updated_at):"لا توجد نسخة بعد";
+    if(next){
+      const base=LAST_BACKUP_ROW?new Date(LAST_BACKUP_ROW.updated_at):new Date();base.setDate(base.getDate()+AUTO_BACKUP_DAYS);
+      next.textContent=LAST_BACKUP_ROW?formatBackupDate(base):"عند أول تشغيل";
+    }
+  }catch(err){console.warn("Backup summary failed",err);}
+}
+async function maybeCreateAutomaticBackup(){
+  try{
+    const latest=await fetchLatestBackup();
+    const lastTime=latest?new Date(latest.updated_at).getTime():0;
+    if(!lastTime || Date.now()-lastTime >= AUTO_BACKUP_DAYS*86400000) await createOnlineBackup("automatic");
+    else await refreshBackupSummary();
+  }catch(err){console.warn("Auto backup check failed",err);}
+}
+async function restoreLastOnlineBackup(){
+  try{
+    const latest=LAST_BACKUP_ROW || await fetchLatestBackup();
+    if(!latest){toast("لا توجد نسخة احتياطية أونلاين.",false);return;}
+    if(!confirm("سيتم دمج آخر Backup مع البيانات الحالية بدون حذف السجلات الأحدث. هل تريد الاستمرار؟")) return;
+    await createOnlineBackup("before_restore");
+    const wrapper=safeJson(latest.value,{}), backupState=wrapper.state||wrapper;
+    const merged=mergeCloudStates(collectCloudState(),backupState);
+    applyCloudState(merged);reloadStateFromLocalStorage();save();await saveCloudStateNow();renderAll();toast("تم دمج آخر Backup بنجاح.",true);
+  }catch(err){console.warn(err);toast("تعذر استرجاع آخر Backup.",false);}
+}
+async function downloadLastOnlineBackup(){
+  try{
+    const latest=LAST_BACKUP_ROW || await fetchLatestBackup();
+    if(!latest){toast("لا توجد نسخة احتياطية أونلاين.",false);return;}
+    const blob=new Blob([latest.value],{type:"application/json;charset=utf-8"});
+    const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=(latest.key||"kpi_backup")+".json";a.click();URL.revokeObjectURL(a.href);
+  }catch(err){toast("تعذر تنزيل آخر Backup.",false);}
+}
+function exportBackup(){
+  const data={createdAt:new Date().toISOString(),createdBy:currentUser||"system",state:collectCloudState()};
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json;charset=utf-8"});
+  const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=`kpi_backup_${new Date().toISOString().slice(0,10)}.json`;a.click();URL.revokeObjectURL(a.href);
+}
+async function restoreBackupFromFile(e){
+  const file=e.target.files&&e.target.files[0];if(!file)return;
+  try{
+    const parsed=safeJson(await file.text(),null);if(!parsed)throw new Error("invalid");
+    const incoming=parsed.state||parsed;
+    const merged=mergeCloudStates(collectCloudState(),incoming);
+    applyCloudState(merged);reloadStateFromLocalStorage();save();renderAll();toast("تم دمج ملف Backup بدون حذف البيانات الحالية.",true);
+  }catch(err){toast("ملف Backup غير صالح.",false);}finally{e.target.value="";}
 }
 function reloadStateFromLocalStorage(){
   USERS = JSON.parse(localStorage.getItem("kpi_users_v1") || "null") || structuredClone(DEFAULT_USERS);
@@ -874,15 +1048,15 @@ function reloadStateFromLocalStorage(){
   activityLog = JSON.parse(localStorage.getItem("kpi_activity_log_v1") || "[]");
   transferLog = JSON.parse(localStorage.getItem("kpi_transfer_log_v1") || "[]");
   loadCriteriaSettings();
-  Object.keys(USERS).filter(u => USERS[u].role === "teamleader").forEach(name => {
-    if(!preparerNames[name]) preparerNames[name] = [];
-  });
+  Object.keys(USERS).filter(u => USERS[u].role === "teamleader").forEach(name => {if(!preparerNames[name]) preparerNames[name] = [];});
 }
 async function initCloudStorage(){
-  const hasRemote = await loadCloudState();
+  const hasRemote=await loadCloudState();
   if(hasRemote) reloadStateFromLocalStorage();
-  CLOUD_READY = true;
+  CLOUD_READY=true;
   if(!hasRemote) scheduleCloudSave();
+  await refreshBackupSummary();
+  setTimeout(maybeCreateAutomaticBackup,1500);
 }
 
 const DEFAULT_USERS = {
@@ -1441,10 +1615,12 @@ function table(headers, rows){
 }
 function percent(total,max){return Math.round((total/max)*100)}
 function unique(list,key){return [...new Set(list.map(x=>x[key]).filter(Boolean))].sort()}
-function fillSelect(id, values, first="الكل"){
-  const el=$(id), old=el.value;
-  el.innerHTML=`<option value="">${first}</option>`+values.map(v=>`<option value="${esc(v)}">${esc(v)}</option>`).join("");
-  if(values.includes(old))el.value=old;
+function fillSelect(idOrElement, values, first="الكل"){
+  const el = typeof idOrElement === "string" ? $(idOrElement) : idOrElement;
+  if(!el) return;
+  const oldValue = el.value;
+  el.innerHTML = `<option value="">${esc(first)}</option>` + (values||[]).map(v=>`<option value="${esc(v)}">${esc(v)}</option>`).join("");
+  if((values||[]).includes(oldValue)) el.value = oldValue;
 }
 function allBranches(){
   const hidden = new Set(HIDDEN_BRANCHES || []);
@@ -3504,6 +3680,10 @@ if($("allMonthFilter")) $("allMonthFilter").addEventListener("input", applyAllMo
 if($("resetAllFiltersBtn")) $("resetAllFiltersBtn").addEventListener("click", resetAllFilters);
 if($("backupBtn")) $("backupBtn").addEventListener("click", exportBackup);
 if($("restoreFile")) $("restoreFile").addEventListener("change", restoreBackupFromFile);
+if($("chooseRestoreFileBtn")) $("chooseRestoreFileBtn").addEventListener("click", ()=>$("restoreFile").click());
+if($("createOnlineBackupBtn")) $("createOnlineBackupBtn").addEventListener("click", ()=>createOnlineBackup("manual"));
+if($("restoreLastOnlineBackupBtn")) $("restoreLastOnlineBackupBtn").addEventListener("click", restoreLastOnlineBackup);
+if($("downloadLastOnlineBackupBtn")) $("downloadLastOnlineBackupBtn").addEventListener("click", downloadLastOnlineBackup);
 
 $("exportBtn").onclick=()=>{
   const lines=["type,date,branch,evaluator,name,total,percent,notes,updatedBy,updatedAt"];

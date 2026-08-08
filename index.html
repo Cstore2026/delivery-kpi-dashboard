@@ -926,9 +926,18 @@ async function loadCloudState(){
     const row=await fetchCloudRow(CLOUD_ROW_KEY);
     if(row && row.value){
       const remoteState=safeJson(row.value,{});
-      const merged=mergeCloudStates(remoteState,collectCloudState());
-      applyCloudState(merged);
-      CLOUD_LAST_SYNC=JSON.stringify(merged);
+
+      // Online-first: Supabase is the source of truth when the app opens.
+      // Keep a local safety copy before replacing browser state, so no local data is silently lost.
+      try{
+        localStorage.setItem("kpi_local_before_cloud_load_backup", JSON.stringify({
+          createdAt:new Date().toISOString(),
+          state:collectCloudState()
+        }));
+      }catch(_){ }
+
+      applyCloudState(remoteState);
+      CLOUD_LAST_SYNC=JSON.stringify(remoteState);
       setCloudStatus("متصل ✓",true);
       return true;
     }
@@ -2920,6 +2929,34 @@ function renderExecutiveIndicators(pData, lData, pSum, lSum, month, branch, type
   $("executiveMissingIndicators").innerHTML = renderMissingChart(missingData);
 }
 
+let VIEW_CLOUD_REFRESHING = false;
+let VIEW_CLOUD_LAST_FETCH = 0;
+async function refreshViewEvaluationsFromCloud(){
+  if(VIEW_CLOUD_REFRESHING) return;
+  if(Date.now() - VIEW_CLOUD_LAST_FETCH < 1200) return;
+  VIEW_CLOUD_REFRESHING = true;
+  try{
+    const row = await fetchCloudRow(CLOUD_ROW_KEY);
+    if(!row || !row.value) return;
+    const remoteState = safeJson(row.value,{});
+    const remotePreparers = safeJson(remoteState["kpi_preparers_v3"],[]);
+    const remoteLeaders = safeJson(remoteState["kpi_leaders_v3"],[]);
+    if(Array.isArray(remotePreparers)){
+      preparers = remotePreparers;
+      localStorage.setItem("kpi_preparers_v3", JSON.stringify(preparers));
+    }
+    if(Array.isArray(remoteLeaders)){
+      leaders = remoteLeaders;
+      localStorage.setItem("kpi_leaders_v3", JSON.stringify(leaders));
+    }
+    VIEW_CLOUD_LAST_FETCH = Date.now();
+  }catch(err){
+    console.warn("View cloud refresh failed",err);
+  }finally{
+    VIEW_CLOUD_REFRESHING = false;
+  }
+}
+
 function filterBy(list, month, branch){return list.filter(r=>(!month||monthOf(r.date)===month)&&(!branch||r.branch===branch))}
 function renderViewNotes(pData, lData, type){
   if(!$('viewPreparerNotes') || !$('viewLeaderNotes')) return;
@@ -2928,7 +2965,39 @@ function renderViewNotes(pData, lData, type){
   if($('viewPreparerNotes')) $('viewPreparerNotes').innerHTML = table(["#","التاريخ","الفرع","المقيّم","المحضر","ملاحظات"], pRows);
   if($('viewLeaderNotes')) $('viewLeaderNotes').innerHTML = table(["#","التاريخ","الفرع","المقيّم","التيم ليدر","ملاحظات"], lRows);
 }
-function renderView(){
+
+let LEADER_CLOUD_RANK_TOKEN = 0;
+async function refreshLeaderRankingDirectFromCloud(month, branch, type){
+  const target = $("viewLeadersRank");
+  if(!target || type === "preparer") return;
+  const token = ++LEADER_CLOUD_RANK_TOKEN;
+  try{
+    const row = await fetchCloudRow(CLOUD_ROW_KEY);
+    if(token !== LEADER_CLOUD_RANK_TOKEN) return;
+    if(!row || !row.value) return;
+    const state = safeJson(row.value, {});
+    let remoteLeaders = state["kpi_leaders_v3"];
+    if(typeof remoteLeaders === "string") remoteLeaders = safeJson(remoteLeaders, []);
+    if(!Array.isArray(remoteLeaders)) remoteLeaders = [];
+
+    // Leader ranking uses the server records directly and only affects the leader table.
+    const normalized = remoteLeaders
+      .filter(r => r && typeof r === "object")
+      .map(r => ({...r, date:String(r.date || "").slice(0,10)}));
+    const cloudData = filterBy(normalized, month, branch);
+    const cloudSummary = groupSummary(cloudData, MAX_L, "leader");
+
+    if(token !== LEADER_CLOUD_RANK_TOKEN) return;
+    target.innerHTML = cloudSummary.length
+      ? rankTable(cloudSummary, "leader")
+      : `<div class="empty">لا توجد تقييمات تيم ليدر لهذا الشهر</div>`;
+  }catch(err){
+    console.warn("Direct leader ranking load failed", err);
+  }
+}
+
+async function renderView(){
+  await refreshViewEvaluationsFromCloud();
   let month=$("viewMonth").value;
   let branch=$("viewBranch").value;
   let type=$("viewType").value;
@@ -2964,6 +3033,7 @@ function renderView(){
       ? rankTable(lSum, "leader")
       : `<div class="empty">لا توجد تقييمات تيم ليدر لهذا الشهر</div>`);
     renderExecutiveReport(pSum, lSum, month, branch);
+    refreshLeaderRankingDirectFromCloud(month, branch, type);
     return;
   }
 
@@ -2975,6 +3045,7 @@ function renderView(){
   $("viewPreparersRank").innerHTML = type==="leader" ? `<div class="empty">تم اختيار التيم ليدر فقط</div>` : rankTable(pSum, "preparer");
   $("viewLeadersRank").innerHTML = type==="preparer" ? `<div class="empty">تم اختيار المحضرين فقط</div>` : rankTable(lSum, "leader");
   renderExecutiveReport(pSum, lSum, month, branch);
+  refreshLeaderRankingDirectFromCloud(month, branch, type);
 }
 function rankTable(summary, mode="preparer"){
   const rows=summary.map((r,i)=>{
@@ -3201,21 +3272,43 @@ function renderDailyFollowFilters(){
   if(branches.includes(currentBranch)) $("dailyFollowBranch").value = currentBranch;
 }
 
+function parseDateParts(dateStr){
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(dateStr || ""));
+  if(!m) return null;
+  return { y:Number(m[1]), m:Number(m[2]), d:Number(m[3]) };
+}
+
+function formatDateParts(y, m, d){
+  return `${String(y).padStart(4,"0")}-${String(m).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
+}
+
 function countDaysInclusive(dateFrom, dateTo){
-  const startDate = new Date(dateFrom + "T00:00:00");
-  const endDate = new Date(dateTo + "T00:00:00");
-  if(isNaN(startDate) || isNaN(endDate)) return 0;
-  return Math.floor((endDate - startDate) / 86400000) + 1;
+  const a = parseDateParts(dateFrom);
+  const b = parseDateParts(dateTo);
+  if(!a || !b) return 0;
+  const startUTC = Date.UTC(a.y, a.m - 1, a.d);
+  const endUTC = Date.UTC(b.y, b.m - 1, b.d);
+  if(endUTC < startUTC) return 0;
+  return Math.floor((endUTC - startUTC) / 86400000) + 1;
 }
 
 function getDatesInRange(dateFrom, dateTo){
   const dates = [];
-  const current = new Date(dateFrom + "T00:00:00");
-  const end = new Date(dateTo + "T00:00:00");
+  const a = parseDateParts(dateFrom);
+  const b = parseDateParts(dateTo);
+  if(!a || !b) return dates;
 
-  while(current <= end){
-    dates.push(current.toISOString().slice(0,10));
-    current.setDate(current.getDate() + 1);
+  let currentUTC = Date.UTC(a.y, a.m - 1, a.d);
+  const endUTC = Date.UTC(b.y, b.m - 1, b.d);
+
+  while(currentUTC <= endUTC){
+    const current = new Date(currentUTC);
+    dates.push(formatDateParts(
+      current.getUTCFullYear(),
+      current.getUTCMonth() + 1,
+      current.getUTCDate()
+    ));
+    currentUTC += 86400000;
   }
 
   return dates;
@@ -3712,6 +3805,7 @@ async function startApp(){
   renderCriteriaForms();
   renderCriteriaSettings();
   calcPScores(); calcLScores();
+  renderAll();
 }
 startApp();
 

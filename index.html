@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>KPI Dashboard - Delivery Team V60.2 Safe</title>
+  <title>KPI Dashboard - Delivery Team V57 Security Preview</title>
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#c2185b">
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -168,7 +168,7 @@
 
     @media(max-width:900px){.grid-2,.grid-3,.grid-4{grid-template-columns:1fr}.criteria-row{grid-template-columns:1fr}.container{margin:14px auto}header h1{font-size:22px}}
 
-    /* V55.16.1 Dark Mode */
+    /* V57 Security Preview Dark Mode */
     body.dark-mode{
       --bg:#120914; --card:#1d1020; --text:#fce7f3; --muted:#d7a6bd;
       --primary:#e11d64; --dark:#9d174d; --border:#6b2448;
@@ -513,26 +513,22 @@
   <section id="settingsTab" class="tab-section hidden">
     <div class="card">
       <h2>إعدادات الداش</h2>
-
-      <div class="card" id="dataSafetyCard" style="box-shadow:none;border-style:dashed;margin-bottom:18px">
-        <h3 style="margin:0 0 14px">🛡️ أمان البيانات</h3>
-        <div class="grid grid-3">
-          <div class="score-box"><div class="label">حالة الاتصال</div><div class="value" id="cloudConnectionStatus" style="font-size:18px">جاري الفحص...</div></div>
-          <div class="score-box"><div class="label">آخر Backup</div><div class="value" id="lastOnlineBackup" style="font-size:16px">لا توجد نسخة بعد</div></div>
-          <div class="score-box"><div class="label">النسخة القادمة</div><div class="value" id="nextOnlineBackup" style="font-size:16px">بعد أول تشغيل</div></div>
-        </div>
-        <div class="actions" style="justify-content:center">
-          <button class="btn" type="button" id="createOnlineBackupBtn">إنشاء Backup الآن</button>
-          <button class="btn dark" type="button" id="restoreLastOnlineBackupBtn">استرجاع آخر Backup</button>
-          <button class="btn light" type="button" id="downloadLastOnlineBackupBtn">تنزيل آخر Backup</button>
-        </div>
-        <input type="file" id="restoreFile" accept="application/json,.json" class="hidden">
-        <div class="actions" style="justify-content:center;margin-top:6px">
-          <button class="btn light" type="button" id="backupBtn">تنزيل نسخة حالية من الجهاز</button>
-          <button class="btn light" type="button" id="chooseRestoreFileBtn">دمج ملف Backup من الجهاز</button>
-        </div>
-      </div>
       <p style="color:var(--muted);margin-top:-6px">الصفحة دي تظهر للسوبر فايزر فقط.</p>
+      <div class="card" style="box-shadow:none;border-style:dashed;margin:14px 0">
+        <h3 style="margin-top:0">🛡️ أمان البيانات</h3>
+        <div class="grid grid-3" style="margin-top:12px">
+          <div class="score-box"><div class="label">الحالة</div><div class="value" id="securityConnectionStatus" style="font-size:18px">جاري الفحص</div></div>
+          <div class="score-box"><div class="label">آخر Backup</div><div class="value" id="latestCloudBackupStatus" style="font-size:15px">جاري الفحص</div></div>
+          <div class="score-box"><div class="label">النسخة القادمة</div><div class="value" id="nextAutoBackupStatus" style="font-size:15px">بعد الفحص</div></div>
+        </div>
+        <div class="actions" style="margin-top:14px">
+          <button class="btn dark" type="button" id="createCloudBackupBtn">إنشاء Backup الآن</button>
+          <button class="btn red" type="button" id="restoreLatestCloudBackupBtn">استرجاع آخر Backup</button>
+          <button class="btn" type="button" id="downloadLatestCloudBackupBtn">تنزيل آخر Backup</button>
+        </div>
+        <div id="cloudSyncStatus" class="role-note hidden" style="margin-top:10px"></div>
+        <input id="restoreFile" type="file" accept="application/json,.json" style="display:none">
+      </div>
 
       <div class="grid grid-2">
         <div class="card" style="box-shadow:none;border-style:dashed">
@@ -804,8 +800,11 @@ const MONTHLY_LEADER_MAX = 840;
 const SUPABASE_URL = "https://hgybmvcnwdsacskwwzvj.supabase.co";
 const SUPABASE_KEY = "sb_publishable_bEnd7r_X_3OythYvVD7iHQ_zxrQ_BkL";
 const CLOUD_ROW_KEY = "app_state";
-const BACKUP_PREFIX = "app_state_backup_";
-const AUTO_BACKUP_DAYS = 10;
+const CLOUD_BACKUP_PREFIX = "app_state_backup_";
+const LOCAL_BACKUP_KEY = "kpi_auto_backups_v1";
+const AUTO_BACKUP_META_KEY = "kpi_auto_backup_10_days_v1";
+const AUTO_BACKUP_INTERVAL_MS = 10 * 24 * 60 * 60 * 1000;
+const CLOUD_TOMBSTONES_KEY = "kpi_deleted_records_v1";
 const CLOUD_STORAGE_KEYS = [
   "kpi_users_v1",
   "kpi_branch_by_leader_v1",
@@ -816,13 +815,13 @@ const CLOUD_STORAGE_KEYS = [
   "kpi_preparer_names_v1",
   "kpi_activity_log_v1",
   "kpi_transfer_log_v1",
-  "kpi_eval_criteria_v1"
+  "kpi_eval_criteria_v1",
+  CLOUD_TOMBSTONES_KEY
 ];
 let CLOUD_READY = false;
 let CLOUD_SAVE_TIMER = null;
 let CLOUD_LAST_SYNC = "";
 let CLOUD_SAVING = false;
-let LAST_BACKUP_ROW = null;
 function cloudHeaders(extra={}){
   return Object.assign({
     "apikey": SUPABASE_KEY,
@@ -831,68 +830,125 @@ function cloudHeaders(extra={}){
   }, extra);
 }
 function safeJson(value, fallback){
-  try{return JSON.parse(value);}catch(_){return fallback;}
+  try{ return JSON.parse(value); }catch(_){ return fallback; }
 }
 function collectCloudState(){
   const out = {};
   CLOUD_STORAGE_KEYS.forEach(k => out[k] = localStorage.getItem(k));
-  out.__meta = JSON.stringify({savedAt:new Date().toISOString(), savedBy:currentUser || "system"});
+  out.__sync_meta = JSON.stringify({savedAt:new Date().toISOString(), version:"V60.1-simple-safe"});
   return out;
-}
-function recordStamp(r){
-  const t = Date.parse(r && r.updatedAt || "");
-  if(Number.isFinite(t)) return t;
-  const id = Number(r && r.id);
-  return Number.isFinite(id) ? id : 0;
 }
 function recordKey(r, type){
-  if(r && r.id !== undefined && r.id !== null) return "id:" + String(r.id);
-  return [type, r && r.date, r && r.branch, r && r.leader, r && r.supervisor, r && r.name].join("|");
+  if(type === "preparer") return [r.date||"", r.name||"", r.leader||"", r.branch||""].join("|");
+  return [r.date||"", r.name||"", r.supervisor||"", r.branch||""].join("|");
 }
-function mergeRecordArrays(remoteArr, localArr, type){
+function recordFreshness(r){
+  const updated=Date.parse(r&&r.updatedAt||"");
+  if(Number.isFinite(updated)) return updated;
+  const id=Number(r&&r.id);
+  return Number.isFinite(id)?id:0;
+}
+function mergeRecordArrays(remoteArr, localArr, type, tombstones){
   const map = new Map();
-  [...(remoteArr||[]), ...(localArr||[])].forEach(r=>{
-    if(!r || typeof r !== "object") return;
-    const k=recordKey(r,type), old=map.get(k);
-    if(!old || recordStamp(r) >= recordStamp(old)) map.set(k,r);
+  (Array.isArray(remoteArr)?remoteArr:[]).forEach(r => map.set(recordKey(r,type), r));
+  (Array.isArray(localArr)?localArr:[]).forEach(r => {
+    const key=recordKey(r,type), existing=map.get(key);
+    if(!existing || recordFreshness(r)>recordFreshness(existing)) map.set(key,r);
   });
+  (tombstones||[]).filter(t=>t.type===type).forEach(t=>map.delete(t.key));
   return [...map.values()];
 }
-function mergeById(remoteArr, localArr){
-  const map=new Map();
-  [...(remoteArr||[]), ...(localArr||[])].forEach(r=>{
-    if(!r || typeof r!=="object") return;
-    const k=String(r.id ?? JSON.stringify(r));
-    if(!map.has(k)) map.set(k,r);
-  });
-  return [...map.values()];
-}
-function mergeNameMaps(remoteObj, localObj){
-  const out={...(remoteObj||{})};
-  Object.entries(localObj||{}).forEach(([k,v])=>{
-    if(Array.isArray(v)) out[k]=[...new Set([...(out[k]||[]),...v])];
-    else if(!(k in out)) out[k]=v;
-  });
-  return out;
-}
+function unionStrings(a,b){ return [...new Set([...(Array.isArray(a)?a:[]), ...(Array.isArray(b)?b:[])])]; }
+function mergeObjects(remoteObj, localObj){ return Object.assign({}, remoteObj||{}, localObj||{}); }
 function mergeCloudStates(remoteState, localState){
-  const out={...(remoteState||{})};
-  CLOUD_STORAGE_KEYS.forEach(k=>{
-    const rv=remoteState && remoteState[k], lv=localState && localState[k];
-    if(lv == null){ if(rv != null) out[k]=rv; return; }
-    if(rv == null){ out[k]=lv; return; }
-    if(k === "kpi_preparers_v3") out[k]=JSON.stringify(mergeRecordArrays(safeJson(rv,[]),safeJson(lv,[]),"preparer"));
-    else if(k === "kpi_leaders_v3") out[k]=JSON.stringify(mergeRecordArrays(safeJson(rv,[]),safeJson(lv,[]),"leader"));
-    else if(k === "kpi_activity_log_v1" || k === "kpi_transfer_log_v1") out[k]=JSON.stringify(mergeById(safeJson(rv,[]),safeJson(lv,[])));
-    else if(k === "kpi_preparer_names_v1") out[k]=JSON.stringify(mergeNameMaps(safeJson(rv,{}),safeJson(lv,{})));
-    else {
-      // إعدادات السيرفر هي المرجع عند وجودها؛ لا نستبدلها بنسخة جهاز قديمة عند مجرد الفتح.
-      out[k]=rv;
-    }
+  remoteState = remoteState && typeof remoteState === "object" ? remoteState : {};
+  localState = localState && typeof localState === "object" ? localState : {};
+  const out = Object.assign({}, remoteState, localState);
+  const remoteT = safeJson(remoteState[CLOUD_TOMBSTONES_KEY]||"[]",[]);
+  const localT = safeJson(localState[CLOUD_TOMBSTONES_KEY]||"[]",[]);
+  const tombstones = [...new Map([...remoteT,...localT].map(t=>[t.type+"|"+t.key,t])).values()];
+  out[CLOUD_TOMBSTONES_KEY] = JSON.stringify(tombstones);
+  out.kpi_preparers_v3 = JSON.stringify(mergeRecordArrays(
+    safeJson(remoteState.kpi_preparers_v3||"[]",[]), safeJson(localState.kpi_preparers_v3||"[]",[]), "preparer", tombstones));
+  out.kpi_leaders_v3 = JSON.stringify(mergeRecordArrays(
+    safeJson(remoteState.kpi_leaders_v3||"[]",[]), safeJson(localState.kpi_leaders_v3||"[]",[]), "leader", tombstones));
+  const remoteNames=safeJson(remoteState.kpi_preparer_names_v1||"{}",{}), localNames=safeJson(localState.kpi_preparer_names_v1||"{}",{}), names={};
+  [...new Set([...Object.keys(remoteNames),...Object.keys(localNames)])].forEach(k=>names[k]=unionStrings(remoteNames[k],localNames[k]));
+  out.kpi_preparer_names_v1=JSON.stringify(names);
+  ["kpi_activity_log_v1","kpi_transfer_log_v1"].forEach(k=>{
+    const merged=[...safeJson(localState[k]||"[]",[]),...safeJson(remoteState[k]||"[]",[])];
+    out[k]=JSON.stringify([...new Map(merged.map(x=>[String(x.id||JSON.stringify(x)),x])).values()].slice(0,1500));
   });
-  out.__meta=JSON.stringify({savedAt:new Date().toISOString(),savedBy:currentUser||"system"});
   return out;
 }
+function createLocalBackup(reason){
+  try{
+    const backups=safeJson(localStorage.getItem(LOCAL_BACKUP_KEY)||"[]",[]);
+    backups.unshift({at:new Date().toISOString(),reason,state:collectCloudState()});
+    localStorage.setItem(LOCAL_BACKUP_KEY,JSON.stringify(backups));
+  }catch(err){ console.warn("Local backup failed",err); }
+}
+async function createCloudBackup(state, reason="حماية تلقائية"){
+  try{
+    const stamp=new Date().toISOString().replace(/[:.]/g,"-");
+    const random=Math.random().toString(36).slice(2,8);
+    const key=CLOUD_BACKUP_PREFIX+stamp+"_"+random;
+    const wrapped=Object.assign({},state,{__backup_meta:JSON.stringify({createdAt:new Date().toISOString(),reason,createdBy:(CURRENT_USER&&CURRENT_USER.name)||"النظام",version:"V60.1-simple-safe"})});
+    const res=await fetch(`${SUPABASE_URL}/rest/v1/kpi_store`,{
+      method:"POST",headers:cloudHeaders(),body:JSON.stringify({key,value:JSON.stringify(wrapped)})
+    });
+    if(!res.ok) throw new Error(await res.text());
+    return key;
+  }catch(err){ console.warn("Cloud backup failed",err); throw err; }
+}
+function formatBackupDate(value){
+  if(!value) return "لم تُنشأ بعد";
+  try{return new Date(value).toLocaleString("ar-EG");}catch(_){return String(value);}
+}
+function showSecurityNotice(message,isError=false){
+  const el=document.getElementById("cloudSyncStatus");
+  if(!el) return;
+  el.textContent=message;
+  el.classList.remove("hidden");
+  el.style.background=isError?"#fff0f3":"#ecfdf5";
+  el.style.color=isError?"#9f1239":"#166534";
+  clearTimeout(showSecurityNotice._timer);
+  showSecurityNotice._timer=setTimeout(()=>el.classList.add("hidden"),5000);
+}
+function updateSecurityCenter(rows){
+  const connected=document.getElementById("securityConnectionStatus");
+  if(connected) connected.textContent=navigator.onLine?"متصل ✓":"غير متصل";
+  const meta=safeJson(localStorage.getItem(AUTO_BACKUP_META_KEY)||"{}",{});
+  const next=document.getElementById("nextAutoBackupStatus");
+  if(next){
+    if(!meta.lastAt) next.textContent="عند أول تشغيل";
+    else{
+      const due=new Date(new Date(meta.lastAt).getTime()+AUTO_BACKUP_INTERVAL_MS);
+      const diff=due-Date.now();
+      next.textContent=diff<=0?"مستحقة الآن":due.toLocaleString("ar-EG");
+    }
+  }
+}
+async function ensureTenDayAutoBackup(){
+  if(!CLOUD_READY||!navigator.onLine) return false;
+  const meta=safeJson(localStorage.getItem(AUTO_BACKUP_META_KEY)||"{}",{});
+  const due=!meta.lastAt || (Date.now()-new Date(meta.lastAt).getTime()>=AUTO_BACKUP_INTERVAL_MS);
+  if(!due){updateSecurityCenter();return false;}
+  try{
+    const remote=await fetchCloudState().catch(()=>null);
+    const state=remote||collectCloudState();
+    const key=await createCloudBackup(state,"Backup تلقائي كل 10 أيام");
+    const saved={lastAt:new Date().toISOString(),key};
+    localStorage.setItem(AUTO_BACKUP_META_KEY,JSON.stringify(saved));
+    showSecurityNotice("تم إنشاء Backup تلقائي بنجاح");
+    await listCloudBackups();
+    updateSecurityCenter();
+    return true;
+  }catch(err){console.warn("10-day auto backup failed",err);updateSecurityCenter();return false;}
+}
+window.addEventListener("online",()=>{updateSecurityCenter();ensureTenDayAutoBackup();});
+window.addEventListener("offline",()=>updateSecurityCenter());
+
 function applyCloudState(state){
   if(!state || typeof state !== "object") return false;
   CLOUD_STORAGE_KEYS.forEach(k => {
@@ -900,172 +956,184 @@ function applyCloudState(state){
   });
   return true;
 }
-async function fetchCloudRow(key){
-  const res=await fetch(`${SUPABASE_URL}/rest/v1/kpi_store?key=eq.${encodeURIComponent(key)}&select=key,value,updated_at`,{headers:cloudHeaders({"Accept":"application/json"})});
+async function fetchCloudState(){
+  const res=await fetch(`${SUPABASE_URL}/rest/v1/kpi_store?key=eq.${encodeURIComponent(CLOUD_ROW_KEY)}&select=value,updated_at`,{headers:cloudHeaders({"Accept":"application/json"})});
   if(!res.ok) throw new Error(await res.text());
   const rows=await res.json();
-  return rows && rows[0] ? rows[0] : null;
-}
-async function upsertCloudRow(key,value){
-  const res=await fetch(`${SUPABASE_URL}/rest/v1/kpi_store?on_conflict=key`,{
-    method:"POST",headers:cloudHeaders({"Prefer":"resolution=merge-duplicates,return=minimal"}),body:JSON.stringify({key,value})
-  });
-  if(!res.ok) throw new Error(await res.text());
-}
-function setCloudStatus(text,ok=true){
-  const el=document.getElementById("cloudConnectionStatus");
-  if(el){el.textContent=text;el.style.color=ok?"var(--green)":"var(--red)";}
-}
-function toast(message,ok=true){
-  let el=document.getElementById("safeToast");
-  if(!el){el=document.createElement("div");el.id="safeToast";el.style.cssText="position:fixed;left:18px;bottom:18px;z-index:99999;max-width:420px;padding:12px 16px;border-radius:14px;color:white;font-weight:900;box-shadow:0 10px 30px rgba(0,0,0,.25);display:none";document.body.appendChild(el);}
-  el.textContent=message;el.style.background=ok?"#15803d":"#ad1457";el.style.display="block";clearTimeout(el._t);el._t=setTimeout(()=>el.style.display="none",4500);
+  return rows&&rows[0]&&rows[0].value?safeJson(rows[0].value,{}):null;
 }
 async function loadCloudState(){
   try{
-    const row=await fetchCloudRow(CLOUD_ROW_KEY);
-    if(row && row.value){
-      const remoteState=safeJson(row.value,{});
-
-      // Online-first: Supabase is the source of truth when the app opens.
-      // Keep a local safety copy before replacing browser state, so no local data is silently lost.
-      try{
-        localStorage.setItem("kpi_local_before_cloud_load_backup", JSON.stringify({
-          createdAt:new Date().toISOString(),
-          state:collectCloudState()
-        }));
-      }catch(_){ }
-
-      applyCloudState(remoteState);
-      CLOUD_LAST_SYNC=JSON.stringify(remoteState);
-      setCloudStatus("متصل ✓",true);
+    const remoteState=await fetchCloudState();
+    if(remoteState){
+      createLocalBackup("قبل دمج بيانات السحابة عند فتح التطبيق");
+      const merged=mergeCloudStates(remoteState,collectCloudState());
+      applyCloudState(merged);
+      CLOUD_LAST_SYNC=JSON.stringify(merged);
       return true;
     }
-    setCloudStatus("متصل ✓",true);
-  }catch(err){console.warn("Supabase load failed",err);setCloudStatus("غير متصل",false);}
+  }catch(err){ console.warn("Supabase load failed",err); }
   return false;
 }
 async function saveCloudStateNow(){
   if(!CLOUD_READY || CLOUD_SAVING) return;
   CLOUD_SAVING=true;
   try{
-    setCloudStatus("جاري الحفظ...",true);
-    const remoteRow=await fetchCloudRow(CLOUD_ROW_KEY);
-    const remote=remoteRow && remoteRow.value ? safeJson(remoteRow.value,{}) : {};
-    const merged=mergeCloudStates(remote,collectCloudState());
+    createLocalBackup("قبل الحفظ أونلاين");
+    const localState=collectCloudState();
+    let remoteState=null;
+    try{ remoteState=await fetchCloudState(); }catch(_){ }
+    const merged=mergeCloudStates(remoteState||{},localState);
     const value=JSON.stringify(merged);
-    if(value !== CLOUD_LAST_SYNC){
-      await upsertCloudRow(CLOUD_ROW_KEY,value);
-      CLOUD_LAST_SYNC=value;
-      applyCloudState(merged);
-    }
-    setCloudStatus("متصل ✓",true);
+    if(value===CLOUD_LAST_SYNC){ CLOUD_SAVING=false; return; }
+    if(remoteState) await createCloudBackup(remoteState,"قبل حفظ تعديل أونلاين");
+    const res=await fetch(`${SUPABASE_URL}/rest/v1/kpi_store?on_conflict=key`,{
+      method:"POST",headers:cloudHeaders({"Prefer":"resolution=merge-duplicates"}),body:JSON.stringify({key:CLOUD_ROW_KEY,value})
+    });
+    if(!res.ok) throw new Error(await res.text());
+    applyCloudState(merged);
+    reloadStateFromLocalStorage();
+    CLOUD_LAST_SYNC=value;
+    showSecurityNotice("تم الحفظ أونلاين بنجاح");
   }catch(err){
-    console.warn("Supabase save failed",err);setCloudStatus("تعذر الحفظ",false);toast("تعذر الحفظ أونلاين. البيانات ما زالت محفوظة على الجهاز ولم يتم حذف بيانات السيرفر.",false);
-  }finally{CLOUD_SAVING=false;}
+    console.warn("Supabase save failed",err);
+    showSecurityNotice("تعذر الحفظ أونلاين؛ البيانات الحالية لم تُحذف وتم حفظ نسخة محلية",true);
+  }finally{ CLOUD_SAVING=false; }
 }
 function scheduleCloudSave(){
   if(!CLOUD_READY) return;
   clearTimeout(CLOUD_SAVE_TIMER);
   CLOUD_SAVE_TIMER=setTimeout(saveCloudStateNow,900);
 }
-function backupKeyNow(){return BACKUP_PREFIX + new Date().toISOString().replace(/[:.]/g,"-");}
-async function createOnlineBackup(kind="manual"){
-  try{
-    setCloudStatus("إنشاء Backup...",true);
-    const row=await fetchCloudRow(CLOUD_ROW_KEY);
-    const state=row && row.value ? row.value : JSON.stringify(collectCloudState());
-    const payload=JSON.stringify({kind,createdAt:new Date().toISOString(),createdBy:currentUser||"system",state:safeJson(state,{})});
-    await upsertCloudRow(backupKeyNow(),payload);
-    localStorage.setItem("kpi_last_auto_backup_at",new Date().toISOString());
-    await refreshBackupSummary();
-    setCloudStatus("متصل ✓",true);toast("تم إنشاء Backup أونلاين بنجاح.",true);
-    return true;
-  }catch(err){console.warn("Backup failed",err);setCloudStatus("تعذر إنشاء Backup",false);toast("تعذر إنشاء Backup أونلاين.",false);return false;}
-}
-async function fetchLatestBackup(){
-  const res=await fetch(`${SUPABASE_URL}/rest/v1/kpi_store?key=like.${encodeURIComponent(BACKUP_PREFIX+'*')}&select=key,value,updated_at&order=updated_at.desc&limit=1`,{headers:cloudHeaders({"Accept":"application/json"})});
-  if(!res.ok) throw new Error(await res.text());
-  const rows=await res.json();return rows&&rows[0]?rows[0]:null;
-}
-function formatBackupDate(v){
-  if(!v) return "لا توجد نسخة بعد";
-  const d=new Date(v);return Number.isNaN(d.getTime())?v:d.toLocaleString("ar-EG");
-}
-async function refreshBackupSummary(){
-  try{
-    LAST_BACKUP_ROW=await fetchLatestBackup();
-    const last=document.getElementById("lastOnlineBackup"), next=document.getElementById("nextOnlineBackup");
-    if(last) last.textContent=LAST_BACKUP_ROW?formatBackupDate(LAST_BACKUP_ROW.updated_at):"لا توجد نسخة بعد";
-    if(next){
-      const base=LAST_BACKUP_ROW?new Date(LAST_BACKUP_ROW.updated_at):new Date();base.setDate(base.getDate()+AUTO_BACKUP_DAYS);
-      next.textContent=LAST_BACKUP_ROW?formatBackupDate(base):"عند أول تشغيل";
-    }
-  }catch(err){console.warn("Backup summary failed",err);}
-}
-async function maybeCreateAutomaticBackup(){
-  try{
-    const latest=await fetchLatestBackup();
-    const lastTime=latest?new Date(latest.updated_at).getTime():0;
-    if(!lastTime || Date.now()-lastTime >= AUTO_BACKUP_DAYS*86400000) await createOnlineBackup("automatic");
-    else await refreshBackupSummary();
-  }catch(err){console.warn("Auto backup check failed",err);}
-}
-async function restoreLastOnlineBackup(){
-  try{
-    const latest=LAST_BACKUP_ROW || await fetchLatestBackup();
-    if(!latest){toast("لا توجد نسخة احتياطية أونلاين.",false);return;}
-    if(!confirm("سيتم دمج آخر Backup مع البيانات الحالية بدون حذف السجلات الأحدث. هل تريد الاستمرار؟")) return;
-    await createOnlineBackup("before_restore");
-    const wrapper=safeJson(latest.value,{}), backupState=wrapper.state||wrapper;
-    const merged=mergeCloudStates(collectCloudState(),backupState);
-    applyCloudState(merged);reloadStateFromLocalStorage();save();await saveCloudStateNow();renderAll();toast("تم دمج آخر Backup بنجاح.",true);
-  }catch(err){console.warn(err);toast("تعذر استرجاع آخر Backup.",false);}
-}
-async function downloadLastOnlineBackup(){
-  try{
-    const latest=LAST_BACKUP_ROW || await fetchLatestBackup();
-    if(!latest){toast("لا توجد نسخة احتياطية أونلاين.",false);return;}
-    const blob=new Blob([latest.value],{type:"application/json;charset=utf-8"});
-    const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=(latest.key||"kpi_backup")+".json";a.click();URL.revokeObjectURL(a.href);
-  }catch(err){toast("تعذر تنزيل آخر Backup.",false);}
-}
-function exportBackup(){
-  const data={createdAt:new Date().toISOString(),createdBy:currentUser||"system",state:collectCloudState()};
-  const blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json;charset=utf-8"});
-  const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=`kpi_backup_${new Date().toISOString().slice(0,10)}.json`;a.click();URL.revokeObjectURL(a.href);
-}
-async function restoreBackupFromFile(e){
-  const file=e.target.files&&e.target.files[0];if(!file)return;
-  try{
-    const parsed=safeJson(await file.text(),null);if(!parsed)throw new Error("invalid");
-    const incoming=parsed.state||parsed;
-    const merged=mergeCloudStates(collectCloudState(),incoming);
-    applyCloudState(merged);reloadStateFromLocalStorage();save();renderAll();toast("تم دمج ملف Backup بدون حذف البيانات الحالية.",true);
-  }catch(err){toast("ملف Backup غير صالح.",false);}finally{e.target.value="";}
-}
 function reloadStateFromLocalStorage(){
-  USERS = JSON.parse(localStorage.getItem("kpi_users_v1") || "null") || structuredClone(DEFAULT_USERS);
+  USERS=JSON.parse(localStorage.getItem("kpi_users_v1")||"null")||structuredClone(DEFAULT_USERS);
   if(USERS["admin"]) delete USERS["admin"];
-  Object.keys(USERS || {}).forEach(u => ensureTeamLeaderPermissions(u));
-  BRANCH_BY_LEADER = JSON.parse(localStorage.getItem("kpi_branch_by_leader_v1") || "null") || structuredClone(DEFAULT_BRANCH_BY_LEADER);
-  LEADER_INTERNAL_NAMES = JSON.parse(localStorage.getItem("kpi_leader_internal_names_v1") || "{}");
-  HIDDEN_BRANCHES = JSON.parse(localStorage.getItem("kpi_hidden_branches_v1") || "[]");
-  preparers = JSON.parse(localStorage.getItem("kpi_preparers_v3") || "[]");
-  leaders = JSON.parse(localStorage.getItem("kpi_leaders_v3") || "[]");
-  preparerNames = JSON.parse(localStorage.getItem("kpi_preparer_names_v1") || "{}");
-  activityLog = JSON.parse(localStorage.getItem("kpi_activity_log_v1") || "[]");
-  transferLog = JSON.parse(localStorage.getItem("kpi_transfer_log_v1") || "[]");
+  Object.keys(USERS||{}).forEach(u=>ensureTeamLeaderPermissions(u));
+  BRANCH_BY_LEADER=JSON.parse(localStorage.getItem("kpi_branch_by_leader_v1")||"null")||structuredClone(DEFAULT_BRANCH_BY_LEADER);
+  LEADER_INTERNAL_NAMES=JSON.parse(localStorage.getItem("kpi_leader_internal_names_v1")||"{}");
+  HIDDEN_BRANCHES=JSON.parse(localStorage.getItem("kpi_hidden_branches_v1")||"[]");
+  preparers=JSON.parse(localStorage.getItem("kpi_preparers_v3")||"[]");
+  leaders=JSON.parse(localStorage.getItem("kpi_leaders_v3")||"[]");
+  preparerNames=JSON.parse(localStorage.getItem("kpi_preparer_names_v1")||"{}");
+  activityLog=JSON.parse(localStorage.getItem("kpi_activity_log_v1")||"[]");
+  transferLog=JSON.parse(localStorage.getItem("kpi_transfer_log_v1")||"[]");
   loadCriteriaSettings();
-  Object.keys(USERS).filter(u => USERS[u].role === "teamleader").forEach(name => {if(!preparerNames[name]) preparerNames[name] = [];});
+  Object.keys(USERS).filter(u=>USERS[u].role==="teamleader").forEach(name=>{if(!preparerNames[name])preparerNames[name]=[];});
 }
 async function initCloudStorage(){
   const hasRemote=await loadCloudState();
   if(hasRemote) reloadStateFromLocalStorage();
   CLOUD_READY=true;
-  if(!hasRemote) scheduleCloudSave();
-  await refreshBackupSummary();
-  setTimeout(maybeCreateAutomaticBackup,1500);
+  // لا نكتب على Supabase عند مجرد فتح نسخة جديدة أو رفع تحديث للموقع.
+  // أول كتابة تتم فقط بعد تعديل حقيقي من المستخدم أو Backup يدوي.
+  updateSecurityCenter();
+}
+function exportBackup(){
+  const payload={exportedAt:new Date().toISOString(),version:"V60.1-simple-safe",state:collectCloudState(),localBackups:safeJson(localStorage.getItem(LOCAL_BACKUP_KEY)||"[]",[])};
+  const blob=new Blob([JSON.stringify(payload,null,2)],{type:"application/json;charset=utf-8"});
+  const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download=`kpi-backup-${new Date().toISOString().slice(0,10)}.json`; a.click(); URL.revokeObjectURL(a.href);
+}
+async function restoreBackupFromFile(ev){
+  const file=ev.target.files&&ev.target.files[0]; if(!file)return;
+  try{
+    const parsed=JSON.parse(await file.text()); const incoming=parsed.state||parsed;
+    if(!incoming||typeof incoming!=="object") throw new Error("ملف غير صالح");
+    if(!confirm("سيتم دمج النسخة الاحتياطية مع البيانات الحالية بدون حذف السجلات الأحدث. متابعة؟"))return;
+    createLocalBackup("قبل الاسترجاع اليدوي");
+    const merged=mergeCloudStates(collectCloudState(),incoming);
+    applyCloudState(merged); reloadStateFromLocalStorage(); save(); renderAll();
+    alert("تم دمج النسخة الاحتياطية بنجاح.");
+  }catch(err){ alert("تعذر استرجاع النسخة: "+err.message); }
+  ev.target.value="";
+}
+let LATEST_CLOUD_BACKUP=null;
+async function fetchLatestCloudBackup(includeValue=false){
+  const fields=includeValue?"key,updated_at,value":"key,updated_at";
+  const url=`${SUPABASE_URL}/rest/v1/kpi_store?key=like.${encodeURIComponent(CLOUD_BACKUP_PREFIX+'*')}&select=${fields}&order=updated_at.desc&limit=1`;
+  const res=await fetch(url,{headers:cloudHeaders({"Accept":"application/json"})});
+  if(!res.ok) throw new Error(await res.text());
+  const rows=await res.json();
+  return rows[0]||null;
+}
+async function refreshLatestCloudBackup(){
+  try{
+    const row=await fetchLatestCloudBackup(false);
+    LATEST_CLOUD_BACKUP=row;
+    const dateEl=document.getElementById("latestCloudBackupStatus");
+    const byEl=null;
+    if(!row){
+      if(dateEl) dateEl.textContent="لا توجد نسخة بعد";
+      if(byEl) byEl.textContent="—";
+      updateSecurityCenter();
+      return null;
+    }
+    if(dateEl) dateEl.textContent=row.updated_at?new Date(row.updated_at).toLocaleString("ar-EG"):"نسخة محفوظة";
+    if(byEl) byEl.textContent="النظام / مستخدم مخوّل";
+    updateSecurityCenter();
+    return row;
+  }catch(err){
+    console.warn("Latest cloud backup failed",err);
+    const dateEl=document.getElementById("latestCloudBackupStatus");
+    if(dateEl) dateEl.textContent="تعذر الفحص";
+    return null;
+  }
+}
+async function listCloudBackups(){
+  const row=await refreshLatestCloudBackup();
+  return row?[row]:[];
+}
+async function createManualCloudBackup(){
+  try{
+    const remote=await fetchCloudState().catch(()=>null), state=remote||collectCloudState();
+    await createCloudBackup(state,"Backup يدوي من إعدادات الداش");
+    showSecurityNotice("تم إنشاء Backup بنجاح");
+    await refreshLatestCloudBackup(); alert("تم إنشاء نسخة احتياطية أونلاين بنجاح.");
+  }catch(err){ alert("تعذر إنشاء النسخة الأونلاين: "+err.message); }
+}
+async function restoreLatestCloudBackup(){
+  if(!confirm("سيتم استرجاع آخر Backup ونشره أونلاين لكل المستخدمين. سيتم إنشاء نسخة حماية من الحالة الحالية أولًا. متابعة؟")) return;
+  try{
+    const latest=await fetchLatestCloudBackup(true);
+    if(!latest||!latest.value) throw new Error("لا توجد نسخة احتياطية أونلاين");
+    const current=await fetchCloudState().catch(()=>collectCloudState());
+    await createCloudBackup(current,"قبل استرجاع آخر Backup");
+    const state=safeJson(latest.value,null); if(!state) throw new Error("محتوى النسخة غير صالح");
+    const value=JSON.stringify(state);
+    const saveRes=await fetch(`${SUPABASE_URL}/rest/v1/kpi_store?on_conflict=key`,{method:"POST",headers:cloudHeaders({"Prefer":"resolution=merge-duplicates"}),body:JSON.stringify({key:CLOUD_ROW_KEY,value})});
+    if(!saveRes.ok) throw new Error(await saveRes.text());
+    createLocalBackup("قبل استرجاع آخر Backup أونلاين"); applyCloudState(state); reloadStateFromLocalStorage(); CLOUD_LAST_SYNC=value; renderAll();
+    showSecurityNotice("تم استرجاع آخر Backup ونشره أونلاين");
+    await refreshLatestCloudBackup();
+    alert("تم استرجاع آخر Backup ونشره لكل المستخدمين.");
+  }catch(err){ alert("تعذر استرجاع آخر Backup: "+err.message); }
+}
+async function downloadLatestCloudBackup(){
+  try{
+    const latest=await fetchLatestCloudBackup(true);
+    if(!latest||!latest.value) throw new Error("لا توجد نسخة احتياطية أونلاين");
+    const payload=safeJson(latest.value,null); if(!payload) throw new Error("محتوى النسخة غير صالح");
+    const blob=new Blob([JSON.stringify({downloadedAt:new Date().toISOString(),backupKey:latest.key,state:payload},null,2)],{type:"application/json"});
+    const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download=`kpi-latest-backup-${new Date().toISOString().slice(0,10)}.json`; a.click(); URL.revokeObjectURL(a.href);
+  }catch(err){ alert("تعذر تنزيل آخر Backup: "+err.message); }
+}
+let CLOUD_POLL_TIMER=null;
+async function pullLatestCloudState(){
+  if(!CLOUD_READY||CLOUD_SAVING||CLOUD_SAVE_TIMER) return;
+  try{
+    const remote=await fetchCloudState(); if(!remote) return; const value=JSON.stringify(remote); if(value===CLOUD_LAST_SYNC) return;
+    createLocalBackup("قبل استقبال تحديث من مستخدم آخر"); applyCloudState(remote); reloadStateFromLocalStorage(); CLOUD_LAST_SYNC=value;
+    if(typeof renderAll==="function") renderAll();
+    showSecurityNotice("تم استقبال آخر تحديث أونلاين");
+  }catch(err){ console.warn("Cloud polling failed",err); }
+}
+function startCloudPolling(){
+  clearInterval(CLOUD_POLL_TIMER); CLOUD_POLL_TIMER=setInterval(pullLatestCloudState,12000);
+  document.addEventListener("visibilitychange",()=>{if(!document.hidden) pullLatestCloudState();}); window.addEventListener("focus",pullLatestCloudState);
+}
+function addRecordTombstone(record,type){
+  const arr=safeJson(localStorage.getItem(CLOUD_TOMBSTONES_KEY)||"[]",[]);
+  const key=recordKey(record,type); arr.push({type,key,deletedAt:new Date().toISOString()});
+  localStorage.setItem(CLOUD_TOMBSTONES_KEY,JSON.stringify([...new Map(arr.map(t=>[t.type+"|"+t.key,t])).values()]));
 }
 
 const DEFAULT_USERS = {
@@ -1624,12 +1692,10 @@ function table(headers, rows){
 }
 function percent(total,max){return Math.round((total/max)*100)}
 function unique(list,key){return [...new Set(list.map(x=>x[key]).filter(Boolean))].sort()}
-function fillSelect(idOrElement, values, first="الكل"){
-  const el = typeof idOrElement === "string" ? $(idOrElement) : idOrElement;
-  if(!el) return;
-  const oldValue = el.value;
-  el.innerHTML = `<option value="">${esc(first)}</option>` + (values||[]).map(v=>`<option value="${esc(v)}">${esc(v)}</option>`).join("");
-  if((values||[]).includes(oldValue)) el.value = oldValue;
+function fillSelect(id, values, first="الكل"){
+  const el=$(id), old=el.value;
+  el.innerHTML=`<option value="">${first}</option>`+values.map(v=>`<option value="${esc(v)}">${esc(v)}</option>`).join("");
+  if(values.includes(old))el.value=old;
 }
 function allBranches(){
   const hidden = new Set(HIDDEN_BRANCHES || []);
@@ -2929,34 +2995,6 @@ function renderExecutiveIndicators(pData, lData, pSum, lSum, month, branch, type
   $("executiveMissingIndicators").innerHTML = renderMissingChart(missingData);
 }
 
-let VIEW_CLOUD_REFRESHING = false;
-let VIEW_CLOUD_LAST_FETCH = 0;
-async function refreshViewEvaluationsFromCloud(){
-  if(VIEW_CLOUD_REFRESHING) return;
-  if(Date.now() - VIEW_CLOUD_LAST_FETCH < 1200) return;
-  VIEW_CLOUD_REFRESHING = true;
-  try{
-    const row = await fetchCloudRow(CLOUD_ROW_KEY);
-    if(!row || !row.value) return;
-    const remoteState = safeJson(row.value,{});
-    const remotePreparers = safeJson(remoteState["kpi_preparers_v3"],[]);
-    const remoteLeaders = safeJson(remoteState["kpi_leaders_v3"],[]);
-    if(Array.isArray(remotePreparers)){
-      preparers = remotePreparers;
-      localStorage.setItem("kpi_preparers_v3", JSON.stringify(preparers));
-    }
-    if(Array.isArray(remoteLeaders)){
-      leaders = remoteLeaders;
-      localStorage.setItem("kpi_leaders_v3", JSON.stringify(leaders));
-    }
-    VIEW_CLOUD_LAST_FETCH = Date.now();
-  }catch(err){
-    console.warn("View cloud refresh failed",err);
-  }finally{
-    VIEW_CLOUD_REFRESHING = false;
-  }
-}
-
 function filterBy(list, month, branch){return list.filter(r=>(!month||monthOf(r.date)===month)&&(!branch||r.branch===branch))}
 function renderViewNotes(pData, lData, type){
   if(!$('viewPreparerNotes') || !$('viewLeaderNotes')) return;
@@ -2965,39 +3003,7 @@ function renderViewNotes(pData, lData, type){
   if($('viewPreparerNotes')) $('viewPreparerNotes').innerHTML = table(["#","التاريخ","الفرع","المقيّم","المحضر","ملاحظات"], pRows);
   if($('viewLeaderNotes')) $('viewLeaderNotes').innerHTML = table(["#","التاريخ","الفرع","المقيّم","التيم ليدر","ملاحظات"], lRows);
 }
-
-let LEADER_CLOUD_RANK_TOKEN = 0;
-async function refreshLeaderRankingDirectFromCloud(month, branch, type){
-  const target = $("viewLeadersRank");
-  if(!target || type === "preparer") return;
-  const token = ++LEADER_CLOUD_RANK_TOKEN;
-  try{
-    const row = await fetchCloudRow(CLOUD_ROW_KEY);
-    if(token !== LEADER_CLOUD_RANK_TOKEN) return;
-    if(!row || !row.value) return;
-    const state = safeJson(row.value, {});
-    let remoteLeaders = state["kpi_leaders_v3"];
-    if(typeof remoteLeaders === "string") remoteLeaders = safeJson(remoteLeaders, []);
-    if(!Array.isArray(remoteLeaders)) remoteLeaders = [];
-
-    // Leader ranking uses the server records directly and only affects the leader table.
-    const normalized = remoteLeaders
-      .filter(r => r && typeof r === "object")
-      .map(r => ({...r, date:String(r.date || "").slice(0,10)}));
-    const cloudData = filterBy(normalized, month, branch);
-    const cloudSummary = groupSummary(cloudData, MAX_L, "leader");
-
-    if(token !== LEADER_CLOUD_RANK_TOKEN) return;
-    target.innerHTML = cloudSummary.length
-      ? rankTable(cloudSummary, "leader")
-      : `<div class="empty">لا توجد تقييمات تيم ليدر لهذا الشهر</div>`;
-  }catch(err){
-    console.warn("Direct leader ranking load failed", err);
-  }
-}
-
-async function renderView(){
-  await refreshViewEvaluationsFromCloud();
+function renderView(){
   let month=$("viewMonth").value;
   let branch=$("viewBranch").value;
   let type=$("viewType").value;
@@ -3033,7 +3039,6 @@ async function renderView(){
       ? rankTable(lSum, "leader")
       : `<div class="empty">لا توجد تقييمات تيم ليدر لهذا الشهر</div>`);
     renderExecutiveReport(pSum, lSum, month, branch);
-    refreshLeaderRankingDirectFromCloud(month, branch, type);
     return;
   }
 
@@ -3045,7 +3050,6 @@ async function renderView(){
   $("viewPreparersRank").innerHTML = type==="leader" ? `<div class="empty">تم اختيار التيم ليدر فقط</div>` : rankTable(pSum, "preparer");
   $("viewLeadersRank").innerHTML = type==="preparer" ? `<div class="empty">تم اختيار المحضرين فقط</div>` : rankTable(lSum, "leader");
   renderExecutiveReport(pSum, lSum, month, branch);
-  refreshLeaderRankingDirectFromCloud(month, branch, type);
 }
 function rankTable(summary, mode="preparer"){
   const rows=summary.map((r,i)=>{
@@ -3272,43 +3276,21 @@ function renderDailyFollowFilters(){
   if(branches.includes(currentBranch)) $("dailyFollowBranch").value = currentBranch;
 }
 
-function parseDateParts(dateStr){
-  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(dateStr || ""));
-  if(!m) return null;
-  return { y:Number(m[1]), m:Number(m[2]), d:Number(m[3]) };
-}
-
-function formatDateParts(y, m, d){
-  return `${String(y).padStart(4,"0")}-${String(m).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
-}
-
 function countDaysInclusive(dateFrom, dateTo){
-  const a = parseDateParts(dateFrom);
-  const b = parseDateParts(dateTo);
-  if(!a || !b) return 0;
-  const startUTC = Date.UTC(a.y, a.m - 1, a.d);
-  const endUTC = Date.UTC(b.y, b.m - 1, b.d);
-  if(endUTC < startUTC) return 0;
-  return Math.floor((endUTC - startUTC) / 86400000) + 1;
+  const startDate = new Date(dateFrom + "T00:00:00");
+  const endDate = new Date(dateTo + "T00:00:00");
+  if(isNaN(startDate) || isNaN(endDate)) return 0;
+  return Math.floor((endDate - startDate) / 86400000) + 1;
 }
 
 function getDatesInRange(dateFrom, dateTo){
   const dates = [];
-  const a = parseDateParts(dateFrom);
-  const b = parseDateParts(dateTo);
-  if(!a || !b) return dates;
+  const current = new Date(dateFrom + "T00:00:00");
+  const end = new Date(dateTo + "T00:00:00");
 
-  let currentUTC = Date.UTC(a.y, a.m - 1, a.d);
-  const endUTC = Date.UTC(b.y, b.m - 1, b.d);
-
-  while(currentUTC <= endUTC){
-    const current = new Date(currentUTC);
-    dates.push(formatDateParts(
-      current.getUTCFullYear(),
-      current.getUTCMonth() + 1,
-      current.getUTCDate()
-    ));
-    currentUTC += 86400000;
+  while(current <= end){
+    dates.push(current.toISOString().slice(0,10));
+    current.setDate(current.getDate() + 1);
   }
 
   return dates;
@@ -3655,6 +3637,17 @@ function resetAllFilters(){
   renderAllTables();
 }
 
+function deletePreparerRecord(id){
+  const r=preparers.find(x=>String(x.id)===String(id)); if(!r)return;
+  if(!confirm("حذف هذا التقييم؟ سيتم تسجيل الحذف ومزامنته بأمان."))return;
+  addRecordTombstone(r,"preparer"); preparers=preparers.filter(x=>String(x.id)!==String(id)); save(); addActivity("حذف تقييم محضر",`${r.name} | ${r.date}`); renderAll();
+}
+function deleteLeaderRecord(id){
+  const r=leaders.find(x=>String(x.id)===String(id)); if(!r)return;
+  if(!confirm("حذف هذا التقييم؟ سيتم تسجيل الحذف ومزامنته بأمان."))return;
+  addRecordTombstone(r,"leader"); leaders=leaders.filter(x=>String(x.id)!==String(id)); save(); addActivity("حذف تقييم تيم ليدر",`${r.name} | ${r.date}`); renderAll();
+}
+
 function renderAllTables(){
   renderAllDataFilters();
 
@@ -3753,12 +3746,15 @@ if($("smartReportType")) $("smartReportType").addEventListener("input", () => {
 });
 if($("smartReportPerson")) $("smartReportPerson").addEventListener("input", renderView);
 if($("refreshSmartReportBtn")) $("refreshSmartReportBtn").addEventListener("click", renderView);
-if($("clearBtn")) $("clearBtn").onclick=()=>{
-  const word = prompt("لمسح كل البيانات اكتب DELETE");
+if($("clearBtn")) $("clearBtn").onclick=async()=>{
+  const word = prompt("هذه عملية خطيرة جدًا. لن يبدأ المسح إلا بعد إنشاء Backup أونلاين. اكتب DELETE للتأكيد");
   if(word !== "DELETE"){
     alert("تم إلغاء المسح");
     return;
   }
+  preparers.forEach(r=>addRecordTombstone(r,"preparer"));
+  leaders.forEach(r=>addRecordTombstone(r,"leader"));
+  try{ await createCloudBackup(await fetchCloudState().catch(()=>collectCloudState()),"قبل مسح كل البيانات"); }catch(err){ alert("تعذر إنشاء Backup أونلاين، لذلك تم إلغاء المسح لحماية البيانات."); return; }
   preparers=[];
   leaders=[];
   save();
@@ -3771,12 +3767,11 @@ if($("allMonthFilter")) $("allMonthFilter").addEventListener("input", applyAllMo
   if($(id)) $(id).addEventListener("input", renderAllTables);
 });
 if($("resetAllFiltersBtn")) $("resetAllFiltersBtn").addEventListener("click", resetAllFilters);
-if($("backupBtn")) $("backupBtn").addEventListener("click", exportBackup);
+if($("syncNowBtn")) $("syncNowBtn").addEventListener("click", saveCloudStateNow);
 if($("restoreFile")) $("restoreFile").addEventListener("change", restoreBackupFromFile);
-if($("chooseRestoreFileBtn")) $("chooseRestoreFileBtn").addEventListener("click", ()=>$("restoreFile").click());
-if($("createOnlineBackupBtn")) $("createOnlineBackupBtn").addEventListener("click", ()=>createOnlineBackup("manual"));
-if($("restoreLastOnlineBackupBtn")) $("restoreLastOnlineBackupBtn").addEventListener("click", restoreLastOnlineBackup);
-if($("downloadLastOnlineBackupBtn")) $("downloadLastOnlineBackupBtn").addEventListener("click", downloadLastOnlineBackup);
+if($("createCloudBackupBtn")) $("createCloudBackupBtn").addEventListener("click", createManualCloudBackup);
+if($("restoreLatestCloudBackupBtn")) $("restoreLatestCloudBackupBtn").addEventListener("click", restoreLatestCloudBackup);
+if($("downloadLatestCloudBackupBtn")) $("downloadLatestCloudBackupBtn").addEventListener("click", downloadLatestCloudBackup);
 
 $("exportBtn").onclick=()=>{
   const lines=["type,date,branch,evaluator,name,total,percent,notes,updatedBy,updatedAt"];
@@ -3805,7 +3800,10 @@ async function startApp(){
   renderCriteriaForms();
   renderCriteriaSettings();
   calcPScores(); calcLScores();
-  renderAll();
+  startCloudPolling();
+  await listCloudBackups();
+  updateSecurityCenter();
+  await ensureTenDayAutoBackup();
 }
 startApp();
 

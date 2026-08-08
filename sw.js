@@ -1,4 +1,4 @@
-const CACHE_NAME = 'cstore-kpi-v60-9-both-ranking-fix';
+const CACHE_NAME = 'cstore-kpi-v56-16-6-criteria-v1';
 const APP_SHELL = [
   './',
   './index.html',

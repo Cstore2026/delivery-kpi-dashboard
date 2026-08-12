@@ -1,12 +1,12 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>KPI Dashboard - Delivery Team V57 Security Preview</title>
-  <link rel="manifest" href="manifest.json">
+<!-- saved from url=(0030)https://cstore-kpi.vercel.app/ -->
+<html lang="ar" dir="rtl"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KPI Dashboard - Delivery Team V55.16.4</title>
+  <link rel="manifest" href="/manifest.json">
   <meta name="theme-color" content="#c2185b">
-  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
   <style>
     :root{
       --bg:#fff7fb; --card:#ffffff; --text:#3f1834; --muted:#8b5f78;
@@ -30,6 +30,7 @@
     header h1{margin:0;font-size:26px}
     header p{margin:7px 0 0;color:#ffd6e8}
     .topbar{display:flex;justify-content:space-between;gap:14px;align-items:center;flex-wrap:wrap}
+    .offline-badge{margin:10px auto 0;max-width:1200px;padding:10px 14px;border:1px solid #c2185b;border-radius:12px;background:#fff1f6;color:#7a123f;font-weight:700;text-align:center}
     .container{max-width:1320px;margin:22px auto;padding:0 16px}
     .card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:18px;box-shadow:var(--shadow)}
     .tabs{display:flex;gap:9px;flex-wrap:wrap;margin-bottom:16px}
@@ -168,7 +169,7 @@
 
     @media(max-width:900px){.grid-2,.grid-3,.grid-4{grid-template-columns:1fr}.criteria-row{grid-template-columns:1fr}.container{margin:14px auto}header h1{font-size:22px}}
 
-    /* V57 Security Preview Dark Mode */
+    /* V55.16.1 Dark Mode */
     body.dark-mode{
       --bg:#120914; --card:#1d1020; --text:#fce7f3; --muted:#d7a6bd;
       --primary:#e11d64; --dark:#9d174d; --border:#6b2448;
@@ -228,19 +229,9 @@
     <div class="grid">
       <div>
         <label>اختار المستخدم</label>
-        <select id="loginUserSelect">
-          <option value="">اختر اسم المستخدم</option>
-          <option value="تيم ليدر عباس">تيم ليدر عباس</option>
-          <option value="تيم ليدر تريومف">تيم ليدر تريومف</option>
-          <option value="تيم ليدر التجمع الاول">تيم ليدر التجمع الاول</option>
-          <option value="تيم ليدر المعادي">تيم ليدر المعادي</option>
-          <option value="تيم ليدر التجمع الخامس">تيم ليدر التجمع الخامس</option>
-          <option value="سوبر فايزر">سوبر فايزر</option>
-          <option value="view">view</option>
-
-        </select>
+        <select id="loginUserSelect"><option value="">اختر اسم المستخدم</option><option value="تيم ليدر عباس">تيم ليدر عباس</option><option value="تيم ليدر تريومف">تيم ليدر تريومف</option><option value="تيم ليدر التجمع الاول">تيم ليدر التجمع الاول</option><option value="تيم ليدر المعادي">تيم ليدر المعادي</option><option value="تيم ليدر التجمع الخامس">تيم ليدر التجمع الخامس</option><option value="سوبر فايزر">سوبر فايزر</option><option value="view">view</option></select>
         <input id="loginUser" type="hidden">
-        <datalist id="usersList"></datalist>
+        <datalist id="usersList"><option value="تيم ليدر عباس"></option><option value="تيم ليدر تريومف"></option><option value="تيم ليدر التجمع الاول"></option><option value="تيم ليدر المعادي"></option><option value="تيم ليدر التجمع الخامس"></option><option value="سوبر فايزر"></option><option value="view"></option></datalist>
       </div>
       <div>
         <label>كلمة المرور</label>
@@ -259,11 +250,13 @@
       <p id="roleText" class="hidden"></p>
     </div>
     <div class="actions no-print" style="margin:0">
+      <button class="btn light" type="button" id="offlineDownloadBtn">تنزيل نسخة Offline كاملة</button>
       <button class="btn light" type="button" id="themeToggle">Dark Mode</button>
       <button class="btn light" id="logoutBtn">تسجيل خروج</button>
     </div>
   </div>
 </header>
+<div id="offlineSnapshotBadge" class="offline-badge hidden">نسخة Offline آمنة — البيانات محفوظة داخل الملف، والحفظ على Supabase متوقف.</div>
 
 <main class="container">
   <div class="tabs no-print" id="tabs"></div>
@@ -329,17 +322,15 @@
       <h2>تقييم المحضرين اليومي</h2>
       <form id="preparerForm">
         <div class="grid grid-3">
-          <div><label>التاريخ</label><input type="date" id="pDate" required></div>
+          <div><label>التاريخ</label><input type="date" id="pDate" required=""></div>
           <div>
             <label>اسم التيم ليدر</label>
-            <input id="pLeader" list="leadersListP" placeholder="اسم التيم ليدر" required>
-            <datalist id="leadersListP"></datalist>
+            <input id="pLeader" list="leadersListP" placeholder="اسم التيم ليدر" required="">
+            <datalist id="leadersListP"><option value="تيم ليدر عباس">ابراهيم اكرم</option><option value="تيم ليدر تريومف">سمير محمد</option><option value="تيم ليدر التجمع الاول">كريم فؤاد</option><option value="تيم ليدر المعادي">فهمي عبد الفتاح</option><option value="تيم ليدر التجمع الخامس">محمد ابراهيم</option></datalist>
           </div>
           <div>
             <label>اسم المحضر</label>
-            <select id="pName" required>
-              <option value="">اختر المحضر</option>
-            </select>
+            <select id="pName" required=""><option value="">اختر المحضر</option></select>
           </div>
         </div>
 
@@ -348,7 +339,7 @@
           <div class="grid grid-4">
             <div>
               <label>التيم ليدر / اليوزر</label>
-              <select id="manageLeader"></select>
+              <select id="manageLeader"><option value="تيم ليدر عباس">ابراهيم اكرم - تيم ليدر عباس</option><option value="تيم ليدر تريومف">سمير محمد - تيم ليدر تريومف</option><option value="تيم ليدر التجمع الاول">كريم فؤاد - تيم ليدر التجمع الاول</option><option value="تيم ليدر المعادي">فهمي عبد الفتاح - تيم ليدر المعادي</option><option value="تيم ليدر التجمع الخامس">محمد ابراهيم - تيم ليدر التجمع الخامس</option></select>
             </div>
             <div>
               <label>اسم المحضر الجديد</label>
@@ -363,10 +354,54 @@
               <button class="btn light" type="button" id="refreshPreparerBtn">تحديث القائمة</button>
             </div>
           </div>
-          <div id="preparerNamesList" style="margin-top:12px"></div>
+          <div id="preparerNamesList" style="margin-top:12px"><div class="table-wrap"><table><thead><tr><th>#</th><th>اسم المحضر</th><th>إجراء</th></tr></thead><tbody>
+    <tr>
+      <td>1</td>
+      <td>حسن اسامة</td>
+      <td><button class="btn red" style="padding:7px 10px;font-size:12px" type="button" onclick="deletePreparerName(&#39;تيم ليدر عباس&#39;,&#39;حسن اسامة&#39;)">حذف</button></td>
+    </tr>
+  
+    <tr>
+      <td>2</td>
+      <td>عاطف محمد</td>
+      <td><button class="btn red" style="padding:7px 10px;font-size:12px" type="button" onclick="deletePreparerName(&#39;تيم ليدر عباس&#39;,&#39;عاطف محمد&#39;)">حذف</button></td>
+    </tr>
+  
+    <tr>
+      <td>3</td>
+      <td>عبدالرحمن رجب</td>
+      <td><button class="btn red" style="padding:7px 10px;font-size:12px" type="button" onclick="deletePreparerName(&#39;تيم ليدر عباس&#39;,&#39;عبدالرحمن رجب&#39;)">حذف</button></td>
+    </tr>
+  
+    <tr>
+      <td>4</td>
+      <td>محمد احمد</td>
+      <td><button class="btn red" style="padding:7px 10px;font-size:12px" type="button" onclick="deletePreparerName(&#39;تيم ليدر عباس&#39;,&#39;محمد احمد&#39;)">حذف</button></td>
+    </tr>
+  </tbody></table></div></div>
         </div>
 
-        <div id="preparerCriteriaBox" class="grid grid-2" style="margin-top:14px"></div>
+        <div id="preparerCriteriaBox" class="grid grid-2" style="margin-top:14px">
+      <div class="criteria">
+        <div class="criteria-head">الالتزام والانضباط</div>
+        <div class="criteria-row"><b>الحضور والانصراف</b><select class="p-score" id="p1" data-index="0"><option>2</option><option>1</option><option>0</option></select></div><div class="criteria-row"><b>عدم وجود مخالفات إدارية</b><select class="p-score" id="p2" data-index="1"><option>2</option><option>1</option><option>0</option></select></div>
+      </div>
+      <div class="criteria">
+        <div class="criteria-head">سرعة وجودة التحضير</div>
+        <div class="criteria-row"><b>سرعة التحضير</b><select class="p-score" id="p3" data-index="2"><option>2</option><option>1</option><option>0</option></select></div><div class="criteria-row"><b>جودة وسلامة المنتجات</b><select class="p-score" id="p4" data-index="3"><option>2</option><option>1</option><option>0</option></select></div>
+      </div>
+      <div class="criteria">
+        <div class="criteria-head">المظهر والسلوك</div>
+        <div class="criteria-row"><b>الالتزام بالنظافة</b><select class="p-score" id="p5" data-index="4"><option>2</option><option>1</option><option>0</option></select></div><div class="criteria-row"><b>اللباقة والسلوك الشخصي</b><select class="p-score" id="p6" data-index="5"><option>2</option><option>1</option><option>0</option></select></div><div class="criteria-row"><b>المظهر الشخصي</b><select class="p-score" id="p7" data-index="6"><option>2</option><option>1</option><option>0</option></select></div>
+      </div>
+      <div class="criteria">
+        <div class="criteria-head">التعاون وروح الفريق</div>
+        <div class="criteria-row"><b>التعاون مع الزملاء</b><select class="p-score" id="p8" data-index="7"><option>2</option><option>1</option><option>0</option></select></div><div class="criteria-row"><b>الاستجابة للتوجيهات</b><select class="p-score" id="p9" data-index="8"><option>2</option><option>1</option><option>0</option></select></div>
+      </div>
+      <div class="criteria">
+        <div class="criteria-head">حل المشاكل</div>
+        <div class="criteria-row"><b>حل أي مشكلة بسرعة</b><select class="p-score" id="p10" data-index="9"><option>2</option><option>1</option><option>0</option></select></div><div class="criteria-row"><b>التعامل السريع مع المشاكل</b><select class="p-score" id="p11" data-index="10"><option>2</option><option>1</option><option>0</option></select></div>
+      </div></div>
 
         <div class="grid grid-4" style="margin-top:14px">
           <div class="score-box"><div class="label">إجمالي اليوم</div><div class="value" id="pTotal">22</div></div>
@@ -383,16 +418,32 @@
       <h2>تقييم التيم ليدر بواسطة السوبر فايزر</h2>
       <form id="leaderForm">
         <div class="grid grid-3">
-          <div><label>التاريخ</label><input type="date" id="lDate" required></div>
-          <div><label>اسم السوبر فايزر</label><input id="lSupervisor" placeholder="اسم السوبر فايزر" required></div>
+          <div><label>التاريخ</label><input type="date" id="lDate" required=""></div>
+          <div><label>اسم السوبر فايزر</label><input id="lSupervisor" placeholder="اسم السوبر فايزر" required=""></div>
           <div>
             <label>اسم التيم ليدر</label>
-            <input id="lName" list="leadersListL" placeholder="اسم التيم ليدر" required>
-            <datalist id="leadersListL"></datalist>
+            <input id="lName" list="leadersListL" placeholder="اسم التيم ليدر" required="">
+            <datalist id="leadersListL"><option value="تيم ليدر عباس">ابراهيم اكرم</option><option value="تيم ليدر تريومف">سمير محمد</option><option value="تيم ليدر التجمع الاول">كريم فؤاد</option><option value="تيم ليدر المعادي">فهمي عبد الفتاح</option><option value="تيم ليدر التجمع الخامس">محمد ابراهيم</option></datalist>
           </div>
         </div>
 
-        <div id="leaderCriteriaBox" class="grid grid-2" style="margin-top:14px"></div>
+        <div id="leaderCriteriaBox" class="grid grid-2" style="margin-top:14px">
+      <div class="criteria">
+        <div class="criteria-head">نتائج الفرع</div>
+        <div class="criteria-row"><b>نتائج الفرع</b><select class="l-score" id="l1" data-index="0"><option>2</option><option>1</option><option>0</option></select></div><div class="criteria-row"><b>التقارير</b><select class="l-score" id="l2" data-index="1"><option>2</option><option>1</option><option>0</option></select></div><div class="criteria-row"><b>تطوير وتحفيز</b><select class="l-score" id="l3" data-index="2"><option>2</option><option>1</option><option>0</option></select></div><div class="criteria-row"><b>سرعة حل المشاكل</b><select class="l-score" id="l4" data-index="3"><option>2</option><option>1</option><option>0</option></select></div>
+      </div>
+      <div class="criteria">
+        <div class="criteria-head">التخطيط والتنظيم</div>
+        <div class="criteria-row"><b>تنظيم الأعمال والوقت</b><select class="l-score" id="l5" data-index="4"><option>2</option><option>1</option><option>0</option></select></div><div class="criteria-row"><b>الالتزام بالسياسات والتعليمات</b><select class="l-score" id="l6" data-index="5"><option>2</option><option>1</option><option>0</option></select></div><div class="criteria-row"><b>دور المتابعة اليومية</b><select class="l-score" id="l7" data-index="6"><option>2</option><option>1</option><option>0</option></select></div>
+      </div>
+      <div class="criteria">
+        <div class="criteria-head">تطوير الموظفين</div>
+        <div class="criteria-row"><b>تحسين روح الفريق</b><select class="l-score" id="l8" data-index="7"><option>2</option><option>1</option><option>0</option></select></div><div class="criteria-row"><b>الالتزام بالنظم</b><select class="l-score" id="l9" data-index="8"><option>2</option><option>1</option><option>0</option></select></div><div class="criteria-row"><b>متابعة وتحفيز الأفراد</b><select class="l-score" id="l10" data-index="9"><option>2</option><option>1</option><option>0</option></select></div><div class="criteria-row"><b>تدريب الموظفين الجدد</b><select class="l-score" id="l11" data-index="10"><option>2</option><option>1</option><option>0</option></select></div>
+      </div>
+      <div class="criteria">
+        <div class="criteria-head">حل المشاكل واتخاذ القرار</div>
+        <div class="criteria-row"><b>التعامل مع شكاوى العملاء</b><select class="l-score" id="l12" data-index="11"><option>2</option><option>1</option><option>0</option></select></div><div class="criteria-row"><b>حل المشاكل بسرعة وكفاءة</b><select class="l-score" id="l13" data-index="12"><option>2</option><option>1</option><option>0</option></select></div><div class="criteria-row"><b>تقليل تأثير الأخطاء</b><select class="l-score" id="l14" data-index="13"><option>2</option><option>1</option><option>0</option></select></div>
+      </div></div>
 
         <div class="grid grid-4" style="margin-top:14px">
           <div class="score-box"><div class="label">إجمالي اليوم</div><div class="value" id="lTotal">28</div></div>
@@ -514,21 +565,6 @@
     <div class="card">
       <h2>إعدادات الداش</h2>
       <p style="color:var(--muted);margin-top:-6px">الصفحة دي تظهر للسوبر فايزر فقط.</p>
-      <div class="card" style="box-shadow:none;border-style:dashed;margin:14px 0">
-        <h3 style="margin-top:0">🛡️ أمان البيانات</h3>
-        <div class="grid grid-3" style="margin-top:12px">
-          <div class="score-box"><div class="label">الحالة</div><div class="value" id="securityConnectionStatus" style="font-size:18px">جاري الفحص</div></div>
-          <div class="score-box"><div class="label">آخر Backup</div><div class="value" id="latestCloudBackupStatus" style="font-size:15px">جاري الفحص</div></div>
-          <div class="score-box"><div class="label">النسخة القادمة</div><div class="value" id="nextAutoBackupStatus" style="font-size:15px">بعد الفحص</div></div>
-        </div>
-        <div class="actions" style="margin-top:14px">
-          <button class="btn dark" type="button" id="createCloudBackupBtn">إنشاء Backup الآن</button>
-          <button class="btn red" type="button" id="restoreLatestCloudBackupBtn">استرجاع آخر Backup</button>
-          <button class="btn" type="button" id="downloadLatestCloudBackupBtn">تنزيل آخر Backup</button>
-        </div>
-        <div id="cloudSyncStatus" class="role-note hidden" style="margin-top:10px"></div>
-        <input id="restoreFile" type="file" accept="application/json,.json" style="display:none">
-      </div>
 
       <div class="grid grid-2">
         <div class="card" style="box-shadow:none;border-style:dashed">
@@ -557,7 +593,7 @@
           <div class="grid">
             <div>
               <label>اختار التيم ليدر</label>
-              <select id="settingsLeader"></select>
+              <select id="settingsLeader"><option value="تيم ليدر عباس">ابراهيم اكرم - تيم ليدر عباس</option><option value="تيم ليدر تريومف">سمير محمد - تيم ليدر تريومف</option><option value="تيم ليدر التجمع الاول">كريم فؤاد - تيم ليدر التجمع الاول</option><option value="تيم ليدر المعادي">فهمي عبد الفتاح - تيم ليدر المعادي</option><option value="تيم ليدر التجمع الخامس">محمد ابراهيم - تيم ليدر التجمع الخامس</option></select>
             </div>
             <div>
               <label>اسم المحضر</label>
@@ -575,7 +611,7 @@
           <div class="grid">
             <div>
               <label>اختار اليوزر</label>
-              <select id="passwordUser"></select>
+              <select id="passwordUser"><option value="تيم ليدر عباس">تيم ليدر عباس - تيم ليدر</option><option value="تيم ليدر تريومف">تيم ليدر تريومف - تيم ليدر</option><option value="تيم ليدر التجمع الاول">تيم ليدر التجمع الاول - تيم ليدر</option><option value="تيم ليدر المعادي">تيم ليدر المعادي - تيم ليدر</option><option value="تيم ليدر التجمع الخامس">تيم ليدر التجمع الخامس - تيم ليدر</option><option value="سوبر فايزر">سوبر فايزر - سوبر فايزر</option><option value="view">view - View</option></select>
             </div>
             <div>
               <label>كلمة المرور الجديدة</label>
@@ -602,7 +638,151 @@
         <p style="color:var(--muted);margin-top:-4px">
           من هنا تقدر تراجع حسابات الدخول، تحذف أي يوزر غير مطلوب، وتحدد صلاحية يوزر التيم ليدر والصفحات المسموح له يشوفها أو يقيّم منها، وتحدد هل يشوف فرعه فقط أو كل الفروع. الحذف لا يمسح أي تقييمات قديمة محفوظة باسم المستخدم.
         </p>
-        <div id="loginUsersManagementTable"></div>
+        <div id="loginUsersManagementTable"><div class="table-wrap"><table><thead><tr><th>#</th><th>اسم المستخدم</th><th>الاسم الظاهر</th><th>الدور</th><th>الفرع</th><th>نوع الصلاحية</th><th>View Dashboard</th><th>تقييم المحضرين</th><th>عرض البيانات</th><th>الحالة</th><th>إجراء</th></tr></thead><tbody><tr>
+      <td>1</td>
+      <td>view</td>
+      <td>View Only</td>
+      <td>مشاهدة فقط</td>
+      <td>-</td>
+      <td>-</td>
+      <td>-</td>
+      <td>-</td>
+      <td>-</td>
+      <td><span class="badge good">نشط</span></td>
+      <td><button class="btn red" style="padding:7px 10px;font-size:12px" type="button" onclick="deleteLoginUser(&#39;view&#39;)">حذف</button></td>
+    </tr><tr>
+      <td>2</td>
+      <td>تيم ليدر التجمع الاول</td>
+      <td>تيم ليدر التجمع الاول</td>
+      <td>تيم ليدر</td>
+      <td>التجمع الاول</td>
+      <td><select style="min-width:120px" onchange="setTeamLeaderPermission(&#39;تيم ليدر التجمع الاول&#39;, this.value)">
+          <option value="evaluator" selected="">مقيّم</option>
+          <option value="viewer">مشاهد فقط</option>
+        </select></td>
+      <td><select style="min-width:90px" onchange="setTeamLeaderPagePermission(&#39;تيم ليدر التجمع الاول&#39;,&#39;tlCanViewDashboard&#39;, this.value)">
+    <option value="true" selected="">نعم</option>
+    <option value="false">لا</option>
+  </select></td>
+      <td><select style="min-width:90px" onchange="setTeamLeaderPagePermission(&#39;تيم ليدر التجمع الاول&#39;,&#39;tlCanEvaluatePreparers&#39;, this.value)">
+    <option value="true" selected="">نعم</option>
+    <option value="false">لا</option>
+  </select></td>
+      <td><select style="min-width:120px" onchange="setTeamLeaderViewScope(&#39;تيم ليدر التجمع الاول&#39;, this.value)">
+    <option value="own">فرعه فقط</option>
+    <option value="all" selected="">كل الفروع</option>
+  </select></td>
+      <td><span class="badge excellent">مقيّم</span></td>
+      <td><button class="btn red" style="padding:7px 10px;font-size:12px" type="button" onclick="deleteLoginUser(&#39;تيم ليدر التجمع الاول&#39;)">حذف</button></td>
+    </tr><tr>
+      <td>3</td>
+      <td>تيم ليدر التجمع الخامس</td>
+      <td>تيم ليدر التجمع الخامس</td>
+      <td>تيم ليدر</td>
+      <td>التجمع الخامس</td>
+      <td><select style="min-width:120px" onchange="setTeamLeaderPermission(&#39;تيم ليدر التجمع الخامس&#39;, this.value)">
+          <option value="evaluator" selected="">مقيّم</option>
+          <option value="viewer">مشاهد فقط</option>
+        </select></td>
+      <td><select style="min-width:90px" onchange="setTeamLeaderPagePermission(&#39;تيم ليدر التجمع الخامس&#39;,&#39;tlCanViewDashboard&#39;, this.value)">
+    <option value="true" selected="">نعم</option>
+    <option value="false">لا</option>
+  </select></td>
+      <td><select style="min-width:90px" onchange="setTeamLeaderPagePermission(&#39;تيم ليدر التجمع الخامس&#39;,&#39;tlCanEvaluatePreparers&#39;, this.value)">
+    <option value="true" selected="">نعم</option>
+    <option value="false">لا</option>
+  </select></td>
+      <td><select style="min-width:120px" onchange="setTeamLeaderViewScope(&#39;تيم ليدر التجمع الخامس&#39;, this.value)">
+    <option value="own">فرعه فقط</option>
+    <option value="all" selected="">كل الفروع</option>
+  </select></td>
+      <td><span class="badge excellent">مقيّم</span></td>
+      <td><button class="btn red" style="padding:7px 10px;font-size:12px" type="button" onclick="deleteLoginUser(&#39;تيم ليدر التجمع الخامس&#39;)">حذف</button></td>
+    </tr><tr>
+      <td>4</td>
+      <td>تيم ليدر المعادي</td>
+      <td>تيم ليدر المعادي</td>
+      <td>تيم ليدر</td>
+      <td>المعادي</td>
+      <td><select style="min-width:120px" onchange="setTeamLeaderPermission(&#39;تيم ليدر المعادي&#39;, this.value)">
+          <option value="evaluator" selected="">مقيّم</option>
+          <option value="viewer">مشاهد فقط</option>
+        </select></td>
+      <td><select style="min-width:90px" onchange="setTeamLeaderPagePermission(&#39;تيم ليدر المعادي&#39;,&#39;tlCanViewDashboard&#39;, this.value)">
+    <option value="true" selected="">نعم</option>
+    <option value="false">لا</option>
+  </select></td>
+      <td><select style="min-width:90px" onchange="setTeamLeaderPagePermission(&#39;تيم ليدر المعادي&#39;,&#39;tlCanEvaluatePreparers&#39;, this.value)">
+    <option value="true" selected="">نعم</option>
+    <option value="false">لا</option>
+  </select></td>
+      <td><select style="min-width:120px" onchange="setTeamLeaderViewScope(&#39;تيم ليدر المعادي&#39;, this.value)">
+    <option value="own">فرعه فقط</option>
+    <option value="all" selected="">كل الفروع</option>
+  </select></td>
+      <td><span class="badge excellent">مقيّم</span></td>
+      <td><button class="btn red" style="padding:7px 10px;font-size:12px" type="button" onclick="deleteLoginUser(&#39;تيم ليدر المعادي&#39;)">حذف</button></td>
+    </tr><tr>
+      <td>5</td>
+      <td>تيم ليدر تريومف</td>
+      <td>تيم ليدر تريومف</td>
+      <td>تيم ليدر</td>
+      <td>تريومف</td>
+      <td><select style="min-width:120px" onchange="setTeamLeaderPermission(&#39;تيم ليدر تريومف&#39;, this.value)">
+          <option value="evaluator" selected="">مقيّم</option>
+          <option value="viewer">مشاهد فقط</option>
+        </select></td>
+      <td><select style="min-width:90px" onchange="setTeamLeaderPagePermission(&#39;تيم ليدر تريومف&#39;,&#39;tlCanViewDashboard&#39;, this.value)">
+    <option value="true" selected="">نعم</option>
+    <option value="false">لا</option>
+  </select></td>
+      <td><select style="min-width:90px" onchange="setTeamLeaderPagePermission(&#39;تيم ليدر تريومف&#39;,&#39;tlCanEvaluatePreparers&#39;, this.value)">
+    <option value="true" selected="">نعم</option>
+    <option value="false">لا</option>
+  </select></td>
+      <td><select style="min-width:120px" onchange="setTeamLeaderViewScope(&#39;تيم ليدر تريومف&#39;, this.value)">
+    <option value="own">فرعه فقط</option>
+    <option value="all" selected="">كل الفروع</option>
+  </select></td>
+      <td><span class="badge excellent">مقيّم</span></td>
+      <td><button class="btn red" style="padding:7px 10px;font-size:12px" type="button" onclick="deleteLoginUser(&#39;تيم ليدر تريومف&#39;)">حذف</button></td>
+    </tr><tr>
+      <td>6</td>
+      <td>تيم ليدر عباس</td>
+      <td>تيم ليدر عباس</td>
+      <td>تيم ليدر</td>
+      <td>عباس</td>
+      <td><select style="min-width:120px" onchange="setTeamLeaderPermission(&#39;تيم ليدر عباس&#39;, this.value)">
+          <option value="evaluator" selected="">مقيّم</option>
+          <option value="viewer">مشاهد فقط</option>
+        </select></td>
+      <td><select style="min-width:90px" onchange="setTeamLeaderPagePermission(&#39;تيم ليدر عباس&#39;,&#39;tlCanViewDashboard&#39;, this.value)">
+    <option value="true" selected="">نعم</option>
+    <option value="false">لا</option>
+  </select></td>
+      <td><select style="min-width:90px" onchange="setTeamLeaderPagePermission(&#39;تيم ليدر عباس&#39;,&#39;tlCanEvaluatePreparers&#39;, this.value)">
+    <option value="true" selected="">نعم</option>
+    <option value="false">لا</option>
+  </select></td>
+      <td><select style="min-width:120px" onchange="setTeamLeaderViewScope(&#39;تيم ليدر عباس&#39;, this.value)">
+    <option value="own">فرعه فقط</option>
+    <option value="all" selected="">كل الفروع</option>
+  </select></td>
+      <td><span class="badge excellent">مقيّم</span></td>
+      <td><button class="btn red" style="padding:7px 10px;font-size:12px" type="button" onclick="deleteLoginUser(&#39;تيم ليدر عباس&#39;)">حذف</button></td>
+    </tr><tr>
+      <td>7</td>
+      <td>سوبر فايزر</td>
+      <td>سوبر فايزر</td>
+      <td>سوبر فايزر</td>
+      <td>كل الفروع</td>
+      <td>-</td>
+      <td>-</td>
+      <td>-</td>
+      <td>-</td>
+      <td><span class="badge excellent">سوبر فايزر</span></td>
+      <td><button class="btn red" style="padding:7px 10px;font-size:12px" type="button" onclick="deleteLoginUser(&#39;سوبر فايزر&#39;)">حذف</button></td>
+    </tr></tbody></table></div></div>
         <div style="margin-top:12px" class="role-note">
           حماية مهمة: لا يمكن حذف آخر حساب سوبر فايزر حتى لا يتم قفل الدخول على الداش.
         </div>
@@ -613,7 +793,37 @@
         <p style="color:var(--muted);margin-top:-4px">
           من هنا تقدر تمسح أي فرع ظاهر في القوائم لو اتضاف بالغلط. حذف الفرع من القائمة لا يحذف أي تقييمات قديمة ولا يمسح المستخدمين.
         </p>
-        <div id="branchesManagementTable"></div>
+        <div id="branchesManagementTable"><div class="table-wrap"><table><thead><tr><th>#</th><th>اسم الفرع</th><th>عدد التيم ليدر الحالي</th><th>تقييمات قديمة على الفرع</th><th>إجراء</th></tr></thead><tbody><tr>
+      <td>1</td>
+      <td>التجمع الاول</td>
+      <td>1</td>
+      <td>41</td>
+      <td><button class="btn red" style="padding:7px 10px;font-size:12px" type="button" onclick="deleteBranchFromList(&#39;التجمع الاول&#39;)">حذف من القائمة</button></td>
+    </tr><tr>
+      <td>2</td>
+      <td>التجمع الخامس</td>
+      <td>1</td>
+      <td>33</td>
+      <td><button class="btn red" style="padding:7px 10px;font-size:12px" type="button" onclick="deleteBranchFromList(&#39;التجمع الخامس&#39;)">حذف من القائمة</button></td>
+    </tr><tr>
+      <td>3</td>
+      <td>المعادي</td>
+      <td>1</td>
+      <td>76</td>
+      <td><button class="btn red" style="padding:7px 10px;font-size:12px" type="button" onclick="deleteBranchFromList(&#39;المعادي&#39;)">حذف من القائمة</button></td>
+    </tr><tr>
+      <td>4</td>
+      <td>تريومف</td>
+      <td>1</td>
+      <td>81</td>
+      <td><button class="btn red" style="padding:7px 10px;font-size:12px" type="button" onclick="deleteBranchFromList(&#39;تريومف&#39;)">حذف من القائمة</button></td>
+    </tr><tr>
+      <td>5</td>
+      <td>عباس</td>
+      <td>1</td>
+      <td>89</td>
+      <td><button class="btn red" style="padding:7px 10px;font-size:12px" type="button" onclick="deleteBranchFromList(&#39;عباس&#39;)">حذف من القائمة</button></td>
+    </tr></tbody></table></div></div>
       </div>
 
       <div class="card" style="box-shadow:none;border-style:dashed;margin-top:18px">
@@ -624,7 +834,7 @@
         <div class="grid grid-3">
           <div>
             <label>التيم ليدر / الاسم المحفوظ تاريخيًا</label>
-            <select id="internalLeaderUser"></select>
+            <select id="internalLeaderUser"><option value="تيم ليدر التجمع الاول">تيم ليدر التجمع الاول | التجمع الاول ← كريم فؤاد</option><option value="تيم ليدر التجمع الخامس">تيم ليدر التجمع الخامس | التجمع الخامس ← محمد ابراهيم</option><option value="تيم ليدر المعادي">تيم ليدر المعادي | المعادي ← فهمي عبد الفتاح</option><option value="تيم ليدر تريومف">تيم ليدر تريومف | تريومف ← سمير محمد</option><option value="تيم ليدر عباس">تيم ليدر عباس | عباس ← ابراهيم اكرم</option></select>
           </div>
           <div>
             <label>الاسم الحقيقي الذي يظهر في التقارير</label>
@@ -635,7 +845,32 @@
             <button class="btn" type="button" id="saveInternalLeaderNameBtn">حفظ الاسم الحقيقي</button>
           </div>
         </div>
-        <div style="margin-top:14px" id="internalLeaderNamesTable"></div>
+        <div style="margin-top:14px" id="internalLeaderNamesTable"><div class="table-wrap"><table><thead><tr><th>#</th><th>الاسم/اليوزر المحفوظ</th><th>الفرع الحالي/آخر فرع</th><th>الاسم الحقيقي داخل التقارير</th></tr></thead><tbody><tr>
+      <td>1</td>
+      <td>تيم ليدر التجمع الاول</td>
+      <td>التجمع الاول</td>
+      <td>كريم فؤاد</td>
+    </tr><tr>
+      <td>2</td>
+      <td>تيم ليدر التجمع الخامس</td>
+      <td>التجمع الخامس</td>
+      <td>محمد ابراهيم</td>
+    </tr><tr>
+      <td>3</td>
+      <td>تيم ليدر المعادي</td>
+      <td>المعادي</td>
+      <td>فهمي عبد الفتاح</td>
+    </tr><tr>
+      <td>4</td>
+      <td>تيم ليدر تريومف</td>
+      <td>تريومف</td>
+      <td>سمير محمد</td>
+    </tr><tr>
+      <td>5</td>
+      <td>تيم ليدر عباس</td>
+      <td>عباس</td>
+      <td>ابراهيم اكرم</td>
+    </tr></tbody></table></div></div>
       </div>
 
 
@@ -648,7 +883,51 @@
         <div class="grid grid-2">
           <div class="card" style="box-shadow:none;border-style:dashed">
             <h3 style="margin-top:0">بنود تقييم المحضرين</h3>
-            <div id="preparerCriteriaSettings"></div>
+            <div id="preparerCriteriaSettings"><div class="table-wrap"><table><thead><tr><th>#</th><th>القسم</th><th>اسم البند</th></tr></thead><tbody><tr>
+      <td>1</td>
+      <td>الالتزام والانضباط</td>
+      <td><input data-criteria-type="preparer" data-criteria-index="0" value="الحضور والانصراف"></td>
+    </tr><tr>
+      <td>2</td>
+      <td>الالتزام والانضباط</td>
+      <td><input data-criteria-type="preparer" data-criteria-index="1" value="عدم وجود مخالفات إدارية"></td>
+    </tr><tr>
+      <td>3</td>
+      <td>سرعة وجودة التحضير</td>
+      <td><input data-criteria-type="preparer" data-criteria-index="2" value="سرعة التحضير"></td>
+    </tr><tr>
+      <td>4</td>
+      <td>سرعة وجودة التحضير</td>
+      <td><input data-criteria-type="preparer" data-criteria-index="3" value="جودة وسلامة المنتجات"></td>
+    </tr><tr>
+      <td>5</td>
+      <td>المظهر والسلوك</td>
+      <td><input data-criteria-type="preparer" data-criteria-index="4" value="الالتزام بالنظافة"></td>
+    </tr><tr>
+      <td>6</td>
+      <td>المظهر والسلوك</td>
+      <td><input data-criteria-type="preparer" data-criteria-index="5" value="اللباقة والسلوك الشخصي"></td>
+    </tr><tr>
+      <td>7</td>
+      <td>المظهر والسلوك</td>
+      <td><input data-criteria-type="preparer" data-criteria-index="6" value="المظهر الشخصي"></td>
+    </tr><tr>
+      <td>8</td>
+      <td>التعاون وروح الفريق</td>
+      <td><input data-criteria-type="preparer" data-criteria-index="7" value="التعاون مع الزملاء"></td>
+    </tr><tr>
+      <td>9</td>
+      <td>التعاون وروح الفريق</td>
+      <td><input data-criteria-type="preparer" data-criteria-index="8" value="الاستجابة للتوجيهات"></td>
+    </tr><tr>
+      <td>10</td>
+      <td>حل المشاكل</td>
+      <td><input data-criteria-type="preparer" data-criteria-index="9" value="حل أي مشكلة بسرعة"></td>
+    </tr><tr>
+      <td>11</td>
+      <td>حل المشاكل</td>
+      <td><input data-criteria-type="preparer" data-criteria-index="10" value="التعامل السريع مع المشاكل"></td>
+    </tr></tbody></table></div><div class="actions"><button class="btn light" type="button" onclick="saveCriteriaLabels(&#39;preparer&#39;)">حفظ تعديل أسماء البنود</button></div></div>
             <div class="grid grid-2" style="margin-top:12px">
               <div><label>اسم بند جديد</label><input id="newPreparerCriterionLabel" placeholder="مثال: الالتزام بالزي"></div>
               <div><label>القسم / المجموعة</label><input id="newPreparerCriterionGroup" placeholder="مثال: الالتزام والانضباط"></div>
@@ -657,7 +936,63 @@
           </div>
           <div class="card" style="box-shadow:none;border-style:dashed">
             <h3 style="margin-top:0">بنود تقييم التيم ليدر</h3>
-            <div id="leaderCriteriaSettings"></div>
+            <div id="leaderCriteriaSettings"><div class="table-wrap"><table><thead><tr><th>#</th><th>القسم</th><th>اسم البند</th></tr></thead><tbody><tr>
+      <td>1</td>
+      <td>نتائج الفرع</td>
+      <td><input data-criteria-type="leader" data-criteria-index="0" value="نتائج الفرع"></td>
+    </tr><tr>
+      <td>2</td>
+      <td>نتائج الفرع</td>
+      <td><input data-criteria-type="leader" data-criteria-index="1" value="التقارير"></td>
+    </tr><tr>
+      <td>3</td>
+      <td>نتائج الفرع</td>
+      <td><input data-criteria-type="leader" data-criteria-index="2" value="تطوير وتحفيز"></td>
+    </tr><tr>
+      <td>4</td>
+      <td>نتائج الفرع</td>
+      <td><input data-criteria-type="leader" data-criteria-index="3" value="سرعة حل المشاكل"></td>
+    </tr><tr>
+      <td>5</td>
+      <td>التخطيط والتنظيم</td>
+      <td><input data-criteria-type="leader" data-criteria-index="4" value="تنظيم الأعمال والوقت"></td>
+    </tr><tr>
+      <td>6</td>
+      <td>التخطيط والتنظيم</td>
+      <td><input data-criteria-type="leader" data-criteria-index="5" value="الالتزام بالسياسات والتعليمات"></td>
+    </tr><tr>
+      <td>7</td>
+      <td>التخطيط والتنظيم</td>
+      <td><input data-criteria-type="leader" data-criteria-index="6" value="دور المتابعة اليومية"></td>
+    </tr><tr>
+      <td>8</td>
+      <td>تطوير الموظفين</td>
+      <td><input data-criteria-type="leader" data-criteria-index="7" value="تحسين روح الفريق"></td>
+    </tr><tr>
+      <td>9</td>
+      <td>تطوير الموظفين</td>
+      <td><input data-criteria-type="leader" data-criteria-index="8" value="الالتزام بالنظم"></td>
+    </tr><tr>
+      <td>10</td>
+      <td>تطوير الموظفين</td>
+      <td><input data-criteria-type="leader" data-criteria-index="9" value="متابعة وتحفيز الأفراد"></td>
+    </tr><tr>
+      <td>11</td>
+      <td>تطوير الموظفين</td>
+      <td><input data-criteria-type="leader" data-criteria-index="10" value="تدريب الموظفين الجدد"></td>
+    </tr><tr>
+      <td>12</td>
+      <td>حل المشاكل واتخاذ القرار</td>
+      <td><input data-criteria-type="leader" data-criteria-index="11" value="التعامل مع شكاوى العملاء"></td>
+    </tr><tr>
+      <td>13</td>
+      <td>حل المشاكل واتخاذ القرار</td>
+      <td><input data-criteria-type="leader" data-criteria-index="12" value="حل المشاكل بسرعة وكفاءة"></td>
+    </tr><tr>
+      <td>14</td>
+      <td>حل المشاكل واتخاذ القرار</td>
+      <td><input data-criteria-type="leader" data-criteria-index="13" value="تقليل تأثير الأخطاء"></td>
+    </tr></tbody></table></div><div class="actions"><button class="btn light" type="button" onclick="saveCriteriaLabels(&#39;leader&#39;)">حفظ تعديل أسماء البنود</button></div></div>
             <div class="grid grid-2" style="margin-top:12px">
               <div><label>اسم بند جديد</label><input id="newLeaderCriterionLabel" placeholder="مثال: الالتزام بتسليم التقارير"></div>
               <div><label>القسم / المجموعة</label><input id="newLeaderCriterionGroup" placeholder="مثال: التقارير والمتابعة"></div>
@@ -682,15 +1017,15 @@
             <div class="grid">
               <div>
                 <label>من تيم ليدر</label>
-                <select id="transferPreparerFromLeader"></select>
+                <select id="transferPreparerFromLeader"><option value="تيم ليدر عباس">ابراهيم اكرم - تيم ليدر عباس</option><option value="تيم ليدر تريومف">سمير محمد - تيم ليدر تريومف</option><option value="تيم ليدر التجمع الاول">كريم فؤاد - تيم ليدر التجمع الاول</option><option value="تيم ليدر المعادي">فهمي عبد الفتاح - تيم ليدر المعادي</option><option value="تيم ليدر التجمع الخامس">محمد ابراهيم - تيم ليدر التجمع الخامس</option></select>
               </div>
               <div>
                 <label>اسم المحضر</label>
-                <select id="transferPreparerName"></select>
+                <select id="transferPreparerName"><option value="">اختر المحضر</option><option value="حسن اسامة">حسن اسامة</option><option value="عاطف محمد">عاطف محمد</option><option value="عبدالرحمن رجب">عبدالرحمن رجب</option><option value="محمد احمد">محمد احمد</option></select>
               </div>
               <div>
                 <label>إلى تيم ليدر</label>
-                <select id="transferPreparerToLeader"></select>
+                <select id="transferPreparerToLeader"><option value="تيم ليدر عباس">ابراهيم اكرم - تيم ليدر عباس</option><option value="تيم ليدر تريومف">سمير محمد - تيم ليدر تريومف</option><option value="تيم ليدر التجمع الاول">كريم فؤاد - تيم ليدر التجمع الاول</option><option value="تيم ليدر المعادي">فهمي عبد الفتاح - تيم ليدر المعادي</option><option value="تيم ليدر التجمع الخامس">محمد ابراهيم - تيم ليدر التجمع الخامس</option></select>
               </div>
               <div class="role-note">
                 سيتم تغيير التيم ليدر/الفرع الحالي فقط. كل تقييمات المحضر السابقة والجديدة ستظل محفوظة معه كما هي.
@@ -706,7 +1041,7 @@
             <div class="grid">
               <div>
                 <label>اسم التيم ليدر</label>
-                <select id="transferLeaderName"></select>
+                <select id="transferLeaderName"><option value="تيم ليدر عباس">ابراهيم اكرم - تيم ليدر عباس</option><option value="تيم ليدر تريومف">سمير محمد - تيم ليدر تريومف</option><option value="تيم ليدر التجمع الاول">كريم فؤاد - تيم ليدر التجمع الاول</option><option value="تيم ليدر المعادي">فهمي عبد الفتاح - تيم ليدر المعادي</option><option value="تيم ليدر التجمع الخامس">محمد ابراهيم - تيم ليدر التجمع الخامس</option></select>
               </div>
               <div>
                 <label>الفرع الجديد</label>
@@ -725,13 +1060,71 @@
           <div class="section-title">
             <h3>سجل حركة النقل</h3>
           </div>
-          <div id="transferLogTable"></div>
+          <div id="transferLogTable"><div class="table-wrap"><table><thead><tr><th>#</th><th>التاريخ</th><th>النوع</th><th>الاسم</th><th>من</th><th>إلى</th><th>تم بواسطة</th></tr></thead><tbody>
+    <tr>
+      <td>1</td>
+      <td>٣‏/٦‏/٢٠٢٦، ٣:٣٤:٣٩ م</td>
+      <td>محضر</td>
+      <td>محمد شوقي</td>
+      <td>فهمي عبد الفتاح / المعادي</td>
+      <td>سمير محمد / تريومف</td>
+      <td>سوبر فايزر</td>
+    </tr>
+  
+    <tr>
+      <td>2</td>
+      <td>٣‏/٦‏/٢٠٢٦، ٣:٣٣:٥٨ م</td>
+      <td>محضر</td>
+      <td>معاذ تامر</td>
+      <td>سمير محمد / تريومف</td>
+      <td>محمد ابراهيم / التجمع الخامس</td>
+      <td>سوبر فايزر</td>
+    </tr>
+  
+    <tr>
+      <td>3</td>
+      <td>٣‏/٦‏/٢٠٢٦، ٣:٣٢:٥٩ م</td>
+      <td>محضر</td>
+      <td>احمد محي</td>
+      <td>ابراهيم اكرم / عباس</td>
+      <td>محمد ابراهيم / التجمع الخامس</td>
+      <td>سوبر فايزر</td>
+    </tr>
+  </tbody></table></div></div>
         </div>
       </div>
 
       <div style="margin-top:18px">
         <h3>قائمة المحضرين حسب التيم ليدر</h3>
-        <div id="settingsPreparersList"></div>
+        <div id="settingsPreparersList"><div class="table-wrap"><table><thead><tr><th>#</th><th>التيم ليدر</th><th>اسم المحضر</th><th>إجراء</th></tr></thead><tbody>
+    <tr>
+      <td>1</td>
+      <td>تيم ليدر عباس</td>
+      <td>حسن اسامة</td>
+      <td><button class="btn red" style="padding:7px 10px;font-size:12px" type="button" onclick="deletePreparerNameFromSettings(&#39;تيم ليدر عباس&#39;,&#39;حسن اسامة&#39;)">حذف</button></td>
+    </tr>
+  
+    <tr>
+      <td>2</td>
+      <td>تيم ليدر عباس</td>
+      <td>عاطف محمد</td>
+      <td><button class="btn red" style="padding:7px 10px;font-size:12px" type="button" onclick="deletePreparerNameFromSettings(&#39;تيم ليدر عباس&#39;,&#39;عاطف محمد&#39;)">حذف</button></td>
+    </tr>
+  
+    <tr>
+      <td>3</td>
+      <td>تيم ليدر عباس</td>
+      <td>عبدالرحمن رجب</td>
+      <td><button class="btn red" style="padding:7px 10px;font-size:12px" type="button" onclick="deletePreparerNameFromSettings(&#39;تيم ليدر عباس&#39;,&#39;عبدالرحمن رجب&#39;)">حذف</button></td>
+    </tr>
+  
+    <tr>
+      <td>4</td>
+      <td>تيم ليدر عباس</td>
+      <td>محمد احمد</td>
+      <td><button class="btn red" style="padding:7px 10px;font-size:12px" type="button" onclick="deletePreparerNameFromSettings(&#39;تيم ليدر عباس&#39;,&#39;محمد احمد&#39;)">حذف</button></td>
+    </tr>
+  </tbody></table></div></div>
       </div>
     </div>
   </section>
@@ -793,6 +1186,7 @@
 </main>
 </section>
 
+<script id="kpiOfflineSnapshotBootstrap">window.__KPI_EMBEDDED_OFFLINE_SNAPSHOT__ = null;</script>
 <script>
 const MAX_P = 22, MAX_L = 28;
 const MONTHLY_PREPARER_MAX = 660;
@@ -800,11 +1194,6 @@ const MONTHLY_LEADER_MAX = 840;
 const SUPABASE_URL = "https://hgybmvcnwdsacskwwzvj.supabase.co";
 const SUPABASE_KEY = "sb_publishable_bEnd7r_X_3OythYvVD7iHQ_zxrQ_BkL";
 const CLOUD_ROW_KEY = "app_state";
-const CLOUD_BACKUP_PREFIX = "app_state_backup_";
-const LOCAL_BACKUP_KEY = "kpi_auto_backups_v1";
-const AUTO_BACKUP_META_KEY = "kpi_auto_backup_10_days_v1";
-const AUTO_BACKUP_INTERVAL_MS = 10 * 24 * 60 * 60 * 1000;
-const CLOUD_TOMBSTONES_KEY = "kpi_deleted_records_v1";
 const CLOUD_STORAGE_KEYS = [
   "kpi_users_v1",
   "kpi_branch_by_leader_v1",
@@ -815,13 +1204,14 @@ const CLOUD_STORAGE_KEYS = [
   "kpi_preparer_names_v1",
   "kpi_activity_log_v1",
   "kpi_transfer_log_v1",
-  "kpi_eval_criteria_v1",
-  CLOUD_TOMBSTONES_KEY
+  "kpi_eval_criteria_v1"
 ];
+const EMBEDDED_OFFLINE_SNAPSHOT = window.__KPI_EMBEDDED_OFFLINE_SNAPSHOT__ || null;
+const OFFLINE_SNAPSHOT_MODE = !!(EMBEDDED_OFFLINE_SNAPSHOT && EMBEDDED_OFFLINE_SNAPSHOT.state && typeof EMBEDDED_OFFLINE_SNAPSHOT.state === "object");
 let CLOUD_READY = false;
+let CLOUD_REMOTE_LOADED = false;
 let CLOUD_SAVE_TIMER = null;
 let CLOUD_LAST_SYNC = "";
-let CLOUD_SAVING = false;
 function cloudHeaders(extra={}){
   return Object.assign({
     "apikey": SUPABASE_KEY,
@@ -829,311 +1219,185 @@ function cloudHeaders(extra={}){
     "Content-Type": "application/json"
   }, extra);
 }
-function safeJson(value, fallback){
-  try{ return JSON.parse(value); }catch(_){ return fallback; }
-}
 function collectCloudState(){
   const out = {};
   CLOUD_STORAGE_KEYS.forEach(k => out[k] = localStorage.getItem(k));
-  out.__sync_meta = JSON.stringify({savedAt:new Date().toISOString(), version:"V60.1-simple-safe"});
   return out;
 }
-function recordKey(r, type){
-  if(type === "preparer") return [r.date||"", r.name||"", r.leader||"", r.branch||""].join("|");
-  return [r.date||"", r.name||"", r.supervisor||"", r.branch||""].join("|");
-}
-function recordFreshness(r){
-  const updated=Date.parse(r&&r.updatedAt||"");
-  if(Number.isFinite(updated)) return updated;
-  const id=Number(r&&r.id);
-  return Number.isFinite(id)?id:0;
-}
-function mergeRecordArrays(remoteArr, localArr, type, tombstones){
-  const map = new Map();
-  (Array.isArray(remoteArr)?remoteArr:[]).forEach(r => map.set(recordKey(r,type), r));
-  (Array.isArray(localArr)?localArr:[]).forEach(r => {
-    const key=recordKey(r,type), existing=map.get(key);
-    if(!existing || recordFreshness(r)>recordFreshness(existing)) map.set(key,r);
-  });
-  (tombstones||[]).filter(t=>t.type===type).forEach(t=>map.delete(t.key));
-  return [...map.values()];
-}
-function unionStrings(a,b){ return [...new Set([...(Array.isArray(a)?a:[]), ...(Array.isArray(b)?b:[])])]; }
-function mergeObjects(remoteObj, localObj){ return Object.assign({}, remoteObj||{}, localObj||{}); }
-function mergeCloudStates(remoteState, localState){
-  remoteState = remoteState && typeof remoteState === "object" ? remoteState : {};
-  localState = localState && typeof localState === "object" ? localState : {};
-  const out = Object.assign({}, remoteState, localState);
-  const remoteT = safeJson(remoteState[CLOUD_TOMBSTONES_KEY]||"[]",[]);
-  const localT = safeJson(localState[CLOUD_TOMBSTONES_KEY]||"[]",[]);
-  const tombstones = [...new Map([...remoteT,...localT].map(t=>[t.type+"|"+t.key,t])).values()];
-  out[CLOUD_TOMBSTONES_KEY] = JSON.stringify(tombstones);
-  out.kpi_preparers_v3 = JSON.stringify(mergeRecordArrays(
-    safeJson(remoteState.kpi_preparers_v3||"[]",[]), safeJson(localState.kpi_preparers_v3||"[]",[]), "preparer", tombstones));
-  out.kpi_leaders_v3 = JSON.stringify(mergeRecordArrays(
-    safeJson(remoteState.kpi_leaders_v3||"[]",[]), safeJson(localState.kpi_leaders_v3||"[]",[]), "leader", tombstones));
-  const remoteNames=safeJson(remoteState.kpi_preparer_names_v1||"{}",{}), localNames=safeJson(localState.kpi_preparer_names_v1||"{}",{}), names={};
-  [...new Set([...Object.keys(remoteNames),...Object.keys(localNames)])].forEach(k=>names[k]=unionStrings(remoteNames[k],localNames[k]));
-  out.kpi_preparer_names_v1=JSON.stringify(names);
-  ["kpi_activity_log_v1","kpi_transfer_log_v1"].forEach(k=>{
-    const merged=[...safeJson(localState[k]||"[]",[]),...safeJson(remoteState[k]||"[]",[])];
-    out[k]=JSON.stringify([...new Map(merged.map(x=>[String(x.id||JSON.stringify(x)),x])).values()].slice(0,1500));
-  });
-  return out;
-}
-function createLocalBackup(reason){
-  try{
-    const backups=safeJson(localStorage.getItem(LOCAL_BACKUP_KEY)||"[]",[]);
-    backups.unshift({at:new Date().toISOString(),reason,state:collectCloudState()});
-    localStorage.setItem(LOCAL_BACKUP_KEY,JSON.stringify(backups));
-  }catch(err){ console.warn("Local backup failed",err); }
-}
-async function createCloudBackup(state, reason="حماية تلقائية"){
-  try{
-    const stamp=new Date().toISOString().replace(/[:.]/g,"-");
-    const random=Math.random().toString(36).slice(2,8);
-    const key=CLOUD_BACKUP_PREFIX+stamp+"_"+random;
-    const wrapped=Object.assign({},state,{__backup_meta:JSON.stringify({createdAt:new Date().toISOString(),reason,createdBy:(CURRENT_USER&&CURRENT_USER.name)||"النظام",version:"V60.1-simple-safe"})});
-    const res=await fetch(`${SUPABASE_URL}/rest/v1/kpi_store`,{
-      method:"POST",headers:cloudHeaders(),body:JSON.stringify({key,value:JSON.stringify(wrapped)})
-    });
-    if(!res.ok) throw new Error(await res.text());
-    return key;
-  }catch(err){ console.warn("Cloud backup failed",err); throw err; }
-}
-function formatBackupDate(value){
-  if(!value) return "لم تُنشأ بعد";
-  try{return new Date(value).toLocaleString("ar-EG");}catch(_){return String(value);}
-}
-function showSecurityNotice(message,isError=false){
-  const el=document.getElementById("cloudSyncStatus");
-  if(!el) return;
-  el.textContent=message;
-  el.classList.remove("hidden");
-  el.style.background=isError?"#fff0f3":"#ecfdf5";
-  el.style.color=isError?"#9f1239":"#166534";
-  clearTimeout(showSecurityNotice._timer);
-  showSecurityNotice._timer=setTimeout(()=>el.classList.add("hidden"),5000);
-}
-function updateSecurityCenter(rows){
-  const connected=document.getElementById("securityConnectionStatus");
-  if(connected) connected.textContent=navigator.onLine?"متصل ✓":"غير متصل";
-  const meta=safeJson(localStorage.getItem(AUTO_BACKUP_META_KEY)||"{}",{});
-  const next=document.getElementById("nextAutoBackupStatus");
-  if(next){
-    if(!meta.lastAt) next.textContent="عند أول تشغيل";
-    else{
-      const due=new Date(new Date(meta.lastAt).getTime()+AUTO_BACKUP_INTERVAL_MS);
-      const diff=due-Date.now();
-      next.textContent=diff<=0?"مستحقة الآن":due.toLocaleString("ar-EG");
-    }
+async function downloadOfflineSnapshot(){
+  if(OFFLINE_SNAPSHOT_MODE){
+    alert("دي بالفعل نسخة Offline مدمج بداخلها Snapshot من البيانات.");
+    return;
   }
-}
-async function ensureTenDayAutoBackup(){
-  if(!CLOUD_READY||!navigator.onLine) return false;
-  const meta=safeJson(localStorage.getItem(AUTO_BACKUP_META_KEY)||"{}",{});
-  const due=!meta.lastAt || (Date.now()-new Date(meta.lastAt).getTime()>=AUTO_BACKUP_INTERVAL_MS);
-  if(!due){updateSecurityCenter();return false;}
-  try{
-    const remote=await fetchCloudState().catch(()=>null);
-    const state=remote||collectCloudState();
-    const key=await createCloudBackup(state,"Backup تلقائي كل 10 أيام");
-    const saved={lastAt:new Date().toISOString(),key};
-    localStorage.setItem(AUTO_BACKUP_META_KEY,JSON.stringify(saved));
-    showSecurityNotice("تم إنشاء Backup تلقائي بنجاح");
-    await listCloudBackups();
-    updateSecurityCenter();
-    return true;
-  }catch(err){console.warn("10-day auto backup failed",err);updateSecurityCenter();return false;}
-}
-window.addEventListener("online",()=>{updateSecurityCenter();ensureTenDayAutoBackup();});
-window.addEventListener("offline",()=>updateSecurityCenter());
+  if(!CLOUD_READY || !CLOUD_REMOTE_LOADED || !CLOUD_LAST_SYNC){
+    alert("لا يمكن إنشاء النسخة الآن لأن الداتا الكاملة لم يتم تحميلها من Supabase. اعمل Refresh وتأكد أن التقييمات ظاهرة بالكامل ثم حاول مرة أخرى.");
+    return;
+  }
 
+  // Capture the live in-memory state, not a possibly stale browser cache.
+  const state = collectCloudState();
+  state["kpi_users_v1"] = JSON.stringify(USERS);
+  state["kpi_branch_by_leader_v1"] = JSON.stringify(BRANCH_BY_LEADER);
+  state["kpi_leader_internal_names_v1"] = JSON.stringify(LEADER_INTERNAL_NAMES);
+  state["kpi_hidden_branches_v1"] = JSON.stringify(HIDDEN_BRANCHES);
+  state["kpi_preparers_v3"] = JSON.stringify(preparers);
+  state["kpi_leaders_v3"] = JSON.stringify(leaders);
+  state["kpi_preparer_names_v1"] = JSON.stringify(preparerNames);
+  state["kpi_activity_log_v1"] = JSON.stringify(activityLog);
+  state["kpi_transfer_log_v1"] = JSON.stringify(transferLog);
+
+  const snapshot = {
+    createdAt: new Date().toISOString(),
+    preparerEvaluations: preparers.length,
+    leaderEvaluations: leaders.length,
+    state
+  };
+
+  let html = "";
+  try{
+    const cleanRes = await fetch(location.href.split("#")[0], {cache:"no-store"});
+    if(cleanRes.ok) html = await cleanRes.text();
+  }catch(_err){}
+  if(!html) html = "<!DOCTYPE html>\n" + document.documentElement.outerHTML;
+
+  const markerStart = '<script id="kpiOfflineSnapshotBootstrap">';
+  const markerPos = html.indexOf(markerStart);
+  if(markerPos === -1){
+    alert("تعذر إنشاء النسخة Offline: لم يتم العثور على نقطة تضمين البيانات.");
+    return;
+  }
+  const closeTag = "<" + "/script>";
+  const markerEnd = html.indexOf(closeTag, markerPos);
+  if(markerEnd === -1){
+    alert("تعذر إنشاء النسخة Offline: ملف الصفحة غير مكتمل.");
+    return;
+  }
+  const safeJson = JSON.stringify(snapshot).replace(/</g, "\\u003c");
+  const replacement = markerStart + "window.__KPI_EMBEDDED_OFFLINE_SNAPSHOT__ = " + safeJson + ";" + closeTag;
+  html = html.slice(0, markerPos) + replacement + html.slice(markerEnd + closeTag.length);
+
+  const blob = new Blob([html], {type:"text/html;charset=utf-8"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  const stamp = new Date().toISOString().replace(/[:.]/g,"-");
+  a.download = `Delivery-KPI-OFFLINE-${stamp}.html`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url), 1500);
+  alert(`تم إنشاء نسخة Offline كاملة: ${preparers.length} تقييم محضر و ${leaders.length} تقييم تيم ليدر.`);
+}
 function applyCloudState(state){
   if(!state || typeof state !== "object") return false;
   CLOUD_STORAGE_KEYS.forEach(k => {
-    if(Object.prototype.hasOwnProperty.call(state,k) && state[k] !== null && typeof state[k] !== "undefined") localStorage.setItem(k,String(state[k]));
+    if(Object.prototype.hasOwnProperty.call(state,k) && state[k] !== null && typeof state[k] !== "undefined"){
+      localStorage.setItem(k, String(state[k]));
+    }
   });
   return true;
 }
-async function fetchCloudState(){
-  const res=await fetch(`${SUPABASE_URL}/rest/v1/kpi_store?key=eq.${encodeURIComponent(CLOUD_ROW_KEY)}&select=value,updated_at`,{headers:cloudHeaders({"Accept":"application/json"})});
-  if(!res.ok) throw new Error(await res.text());
-  const rows=await res.json();
-  return rows&&rows[0]&&rows[0].value?safeJson(rows[0].value,{}):null;
-}
 async function loadCloudState(){
   try{
-    const remoteState=await fetchCloudState();
-    if(remoteState){
-      createLocalBackup("قبل دمج بيانات السحابة عند فتح التطبيق");
-      const merged=mergeCloudStates(remoteState,collectCloudState());
-      applyCloudState(merged);
-      CLOUD_LAST_SYNC=JSON.stringify(merged);
-      return true;
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/kpi_store?key=eq.${encodeURIComponent(CLOUD_ROW_KEY)}&select=value`, {
+      headers: cloudHeaders({"Accept":"application/json"}),
+      cache: "no-store"
+    });
+    if(!res.ok) throw new Error(await res.text());
+    const rows = await res.json();
+    if(!rows || !rows[0] || !rows[0].value) throw new Error("app_state row is missing or empty");
+
+    const remoteState = JSON.parse(rows[0].value);
+    if(!remoteState || typeof remoteState !== "object" ||
+       typeof remoteState["kpi_preparers_v3"] === "undefined" ||
+       typeof remoteState["kpi_leaders_v3"] === "undefined"){
+      throw new Error("app_state payload is invalid");
     }
-  }catch(err){ console.warn("Supabase load failed",err); }
+
+    applyCloudState(remoteState);
+    CLOUD_LAST_SYNC = rows[0].value;
+    CLOUD_REMOTE_LOADED = true;
+    return true;
+  }catch(err){
+    CLOUD_REMOTE_LOADED = false;
+    CLOUD_READY = false;
+    console.warn("Supabase load failed - cloud writes are LOCKED for safety", err);
+  }
   return false;
 }
 async function saveCloudStateNow(){
-  if(!CLOUD_READY || CLOUD_SAVING) return;
-  CLOUD_SAVING=true;
+  // FAIL CLOSED: never write to Supabase unless this page successfully loaded app_state first.
+  if(!CLOUD_READY || !CLOUD_REMOTE_LOADED || !CLOUD_LAST_SYNC) return;
   try{
-    createLocalBackup("قبل الحفظ أونلاين");
-    const localState=collectCloudState();
-    let remoteState=null;
-    try{ remoteState=await fetchCloudState(); }catch(_){ }
-    const merged=mergeCloudStates(remoteState||{},localState);
-    const value=JSON.stringify(merged);
-    if(value===CLOUD_LAST_SYNC){ CLOUD_SAVING=false; return; }
-    if(remoteState) await createCloudBackup(remoteState,"قبل حفظ تعديل أونلاين");
-    const res=await fetch(`${SUPABASE_URL}/rest/v1/kpi_store?on_conflict=key`,{
-      method:"POST",headers:cloudHeaders({"Prefer":"resolution=merge-duplicates"}),body:JSON.stringify({key:CLOUD_ROW_KEY,value})
+    const value = JSON.stringify(collectCloudState());
+    if(value === CLOUD_LAST_SYNC) return;
+
+    // Update the existing app_state row only. Never create/replace it after a failed load.
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/kpi_store?key=eq.${encodeURIComponent(CLOUD_ROW_KEY)}`, {
+      method: "PATCH",
+      headers: cloudHeaders({"Prefer":"return=representation"}),
+      body: JSON.stringify({value, updated_at: new Date().toISOString()})
     });
     if(!res.ok) throw new Error(await res.text());
-    applyCloudState(merged);
-    reloadStateFromLocalStorage();
-    CLOUD_LAST_SYNC=value;
-    showSecurityNotice("تم الحفظ أونلاين بنجاح");
-  }catch(err){
-    console.warn("Supabase save failed",err);
-    showSecurityNotice("تعذر الحفظ أونلاين؛ البيانات الحالية لم تُحذف وتم حفظ نسخة محلية",true);
-  }finally{ CLOUD_SAVING=false; }
-}
-function scheduleCloudSave(){
-  if(!CLOUD_READY) return;
-  clearTimeout(CLOUD_SAVE_TIMER);
-  CLOUD_SAVE_TIMER=setTimeout(saveCloudStateNow,900);
-}
-function reloadStateFromLocalStorage(){
-  USERS=JSON.parse(localStorage.getItem("kpi_users_v1")||"null")||structuredClone(DEFAULT_USERS);
-  if(USERS["admin"]) delete USERS["admin"];
-  Object.keys(USERS||{}).forEach(u=>ensureTeamLeaderPermissions(u));
-  BRANCH_BY_LEADER=JSON.parse(localStorage.getItem("kpi_branch_by_leader_v1")||"null")||structuredClone(DEFAULT_BRANCH_BY_LEADER);
-  LEADER_INTERNAL_NAMES=JSON.parse(localStorage.getItem("kpi_leader_internal_names_v1")||"{}");
-  HIDDEN_BRANCHES=JSON.parse(localStorage.getItem("kpi_hidden_branches_v1")||"[]");
-  preparers=JSON.parse(localStorage.getItem("kpi_preparers_v3")||"[]");
-  leaders=JSON.parse(localStorage.getItem("kpi_leaders_v3")||"[]");
-  preparerNames=JSON.parse(localStorage.getItem("kpi_preparer_names_v1")||"{}");
-  activityLog=JSON.parse(localStorage.getItem("kpi_activity_log_v1")||"[]");
-  transferLog=JSON.parse(localStorage.getItem("kpi_transfer_log_v1")||"[]");
-  loadCriteriaSettings();
-  Object.keys(USERS).filter(u=>USERS[u].role==="teamleader").forEach(name=>{if(!preparerNames[name])preparerNames[name]=[];});
-}
-async function initCloudStorage(){
-  const hasRemote=await loadCloudState();
-  if(hasRemote) reloadStateFromLocalStorage();
-  CLOUD_READY=true;
-  // لا نكتب على Supabase عند مجرد فتح نسخة جديدة أو رفع تحديث للموقع.
-  // أول كتابة تتم فقط بعد تعديل حقيقي من المستخدم أو Backup يدوي.
-  updateSecurityCenter();
-}
-function exportBackup(){
-  const payload={exportedAt:new Date().toISOString(),version:"V60.1-simple-safe",state:collectCloudState(),localBackups:safeJson(localStorage.getItem(LOCAL_BACKUP_KEY)||"[]",[])};
-  const blob=new Blob([JSON.stringify(payload,null,2)],{type:"application/json;charset=utf-8"});
-  const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download=`kpi-backup-${new Date().toISOString().slice(0,10)}.json`; a.click(); URL.revokeObjectURL(a.href);
-}
-async function restoreBackupFromFile(ev){
-  const file=ev.target.files&&ev.target.files[0]; if(!file)return;
-  try{
-    const parsed=JSON.parse(await file.text()); const incoming=parsed.state||parsed;
-    if(!incoming||typeof incoming!=="object") throw new Error("ملف غير صالح");
-    if(!confirm("سيتم دمج النسخة الاحتياطية مع البيانات الحالية بدون حذف السجلات الأحدث. متابعة؟"))return;
-    createLocalBackup("قبل الاسترجاع اليدوي");
-    const merged=mergeCloudStates(collectCloudState(),incoming);
-    applyCloudState(merged); reloadStateFromLocalStorage(); save(); renderAll();
-    alert("تم دمج النسخة الاحتياطية بنجاح.");
-  }catch(err){ alert("تعذر استرجاع النسخة: "+err.message); }
-  ev.target.value="";
-}
-let LATEST_CLOUD_BACKUP=null;
-async function fetchLatestCloudBackup(includeValue=false){
-  const fields=includeValue?"key,updated_at,value":"key,updated_at";
-  const url=`${SUPABASE_URL}/rest/v1/kpi_store?key=like.${encodeURIComponent(CLOUD_BACKUP_PREFIX+'*')}&select=${fields}&order=updated_at.desc&limit=1`;
-  const res=await fetch(url,{headers:cloudHeaders({"Accept":"application/json"})});
-  if(!res.ok) throw new Error(await res.text());
-  const rows=await res.json();
-  return rows[0]||null;
-}
-async function refreshLatestCloudBackup(){
-  try{
-    const row=await fetchLatestCloudBackup(false);
-    LATEST_CLOUD_BACKUP=row;
-    const dateEl=document.getElementById("latestCloudBackupStatus");
-    const byEl=null;
-    if(!row){
-      if(dateEl) dateEl.textContent="لا توجد نسخة بعد";
-      if(byEl) byEl.textContent="—";
-      updateSecurityCenter();
-      return null;
+    const updatedRows = await res.json();
+    if(!Array.isArray(updatedRows) || updatedRows.length !== 1){
+      throw new Error("Safety lock: app_state was not updated exactly once");
     }
-    if(dateEl) dateEl.textContent=row.updated_at?new Date(row.updated_at).toLocaleString("ar-EG"):"نسخة محفوظة";
-    if(byEl) byEl.textContent="النظام / مستخدم مخوّل";
-    updateSecurityCenter();
-    return row;
+    CLOUD_LAST_SYNC = value;
   }catch(err){
-    console.warn("Latest cloud backup failed",err);
-    const dateEl=document.getElementById("latestCloudBackupStatus");
-    if(dateEl) dateEl.textContent="تعذر الفحص";
-    return null;
+    console.warn("Supabase save failed", err);
+    alert("تعذر حفظ البيانات أونلاين. تم إيقاف المزامنة السحابية لهذه الجلسة لحماية الداتا. اعمل Refresh بعد التأكد من الاتصال.");
+    CLOUD_READY = false;
+    CLOUD_REMOTE_LOADED = false;
+    clearTimeout(CLOUD_SAVE_TIMER);
   }
 }
-async function listCloudBackups(){
-  const row=await refreshLatestCloudBackup();
-  return row?[row]:[];
+function scheduleCloudSave(){
+  if(!CLOUD_READY || !CLOUD_REMOTE_LOADED || !CLOUD_LAST_SYNC) return;
+  clearTimeout(CLOUD_SAVE_TIMER);
+  CLOUD_SAVE_TIMER = setTimeout(saveCloudStateNow, 600);
 }
-async function createManualCloudBackup(){
-  try{
-    const remote=await fetchCloudState().catch(()=>null), state=remote||collectCloudState();
-    await createCloudBackup(state,"Backup يدوي من إعدادات الداش");
-    showSecurityNotice("تم إنشاء Backup بنجاح");
-    await refreshLatestCloudBackup(); alert("تم إنشاء نسخة احتياطية أونلاين بنجاح.");
-  }catch(err){ alert("تعذر إنشاء النسخة الأونلاين: "+err.message); }
+function reloadStateFromLocalStorage(){
+  USERS = JSON.parse(localStorage.getItem("kpi_users_v1") || "null") || structuredClone(DEFAULT_USERS);
+  if(USERS["admin"]) delete USERS["admin"];
+  Object.keys(USERS || {}).forEach(u => ensureTeamLeaderPermissions(u));
+  BRANCH_BY_LEADER = JSON.parse(localStorage.getItem("kpi_branch_by_leader_v1") || "null") || structuredClone(DEFAULT_BRANCH_BY_LEADER);
+  LEADER_INTERNAL_NAMES = JSON.parse(localStorage.getItem("kpi_leader_internal_names_v1") || "{}");
+  HIDDEN_BRANCHES = JSON.parse(localStorage.getItem("kpi_hidden_branches_v1") || "[]");
+  preparers = JSON.parse(localStorage.getItem("kpi_preparers_v3") || "[]");
+  leaders = JSON.parse(localStorage.getItem("kpi_leaders_v3") || "[]");
+  preparerNames = JSON.parse(localStorage.getItem("kpi_preparer_names_v1") || "{}");
+  activityLog = JSON.parse(localStorage.getItem("kpi_activity_log_v1") || "[]");
+  transferLog = JSON.parse(localStorage.getItem("kpi_transfer_log_v1") || "[]");
+  loadCriteriaSettings();
+  Object.keys(USERS).filter(u => USERS[u].role === "teamleader").forEach(name => {
+    if(!preparerNames[name]) preparerNames[name] = [];
+  });
 }
-async function restoreLatestCloudBackup(){
-  if(!confirm("سيتم استرجاع آخر Backup ونشره أونلاين لكل المستخدمين. سيتم إنشاء نسخة حماية من الحالة الحالية أولًا. متابعة؟")) return;
-  try{
-    const latest=await fetchLatestCloudBackup(true);
-    if(!latest||!latest.value) throw new Error("لا توجد نسخة احتياطية أونلاين");
-    const current=await fetchCloudState().catch(()=>collectCloudState());
-    await createCloudBackup(current,"قبل استرجاع آخر Backup");
-    const state=safeJson(latest.value,null); if(!state) throw new Error("محتوى النسخة غير صالح");
-    const value=JSON.stringify(state);
-    const saveRes=await fetch(`${SUPABASE_URL}/rest/v1/kpi_store?on_conflict=key`,{method:"POST",headers:cloudHeaders({"Prefer":"resolution=merge-duplicates"}),body:JSON.stringify({key:CLOUD_ROW_KEY,value})});
-    if(!saveRes.ok) throw new Error(await saveRes.text());
-    createLocalBackup("قبل استرجاع آخر Backup أونلاين"); applyCloudState(state); reloadStateFromLocalStorage(); CLOUD_LAST_SYNC=value; renderAll();
-    showSecurityNotice("تم استرجاع آخر Backup ونشره أونلاين");
-    await refreshLatestCloudBackup();
-    alert("تم استرجاع آخر Backup ونشره لكل المستخدمين.");
-  }catch(err){ alert("تعذر استرجاع آخر Backup: "+err.message); }
-}
-async function downloadLatestCloudBackup(){
-  try{
-    const latest=await fetchLatestCloudBackup(true);
-    if(!latest||!latest.value) throw new Error("لا توجد نسخة احتياطية أونلاين");
-    const payload=safeJson(latest.value,null); if(!payload) throw new Error("محتوى النسخة غير صالح");
-    const blob=new Blob([JSON.stringify({downloadedAt:new Date().toISOString(),backupKey:latest.key,state:payload},null,2)],{type:"application/json"});
-    const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download=`kpi-latest-backup-${new Date().toISOString().slice(0,10)}.json`; a.click(); URL.revokeObjectURL(a.href);
-  }catch(err){ alert("تعذر تنزيل آخر Backup: "+err.message); }
-}
-let CLOUD_POLL_TIMER=null;
-async function pullLatestCloudState(){
-  if(!CLOUD_READY||CLOUD_SAVING||CLOUD_SAVE_TIMER) return;
-  try{
-    const remote=await fetchCloudState(); if(!remote) return; const value=JSON.stringify(remote); if(value===CLOUD_LAST_SYNC) return;
-    createLocalBackup("قبل استقبال تحديث من مستخدم آخر"); applyCloudState(remote); reloadStateFromLocalStorage(); CLOUD_LAST_SYNC=value;
-    if(typeof renderAll==="function") renderAll();
-    showSecurityNotice("تم استقبال آخر تحديث أونلاين");
-  }catch(err){ console.warn("Cloud polling failed",err); }
-}
-function startCloudPolling(){
-  clearInterval(CLOUD_POLL_TIMER); CLOUD_POLL_TIMER=setInterval(pullLatestCloudState,12000);
-  document.addEventListener("visibilitychange",()=>{if(!document.hidden) pullLatestCloudState();}); window.addEventListener("focus",pullLatestCloudState);
-}
-function addRecordTombstone(record,type){
-  const arr=safeJson(localStorage.getItem(CLOUD_TOMBSTONES_KEY)||"[]",[]);
-  const key=recordKey(record,type); arr.push({type,key,deletedAt:new Date().toISOString()});
-  localStorage.setItem(CLOUD_TOMBSTONES_KEY,JSON.stringify([...new Map(arr.map(t=>[t.type+"|"+t.key,t])).values()]));
+async function initCloudStorage(){
+  // A downloaded snapshot is intentionally OFFLINE-ONLY. It never reads from or writes to Supabase.
+  if(OFFLINE_SNAPSHOT_MODE){
+    applyCloudState(EMBEDDED_OFFLINE_SNAPSHOT.state);
+    reloadStateFromLocalStorage();
+    CLOUD_READY = false;
+    CLOUD_REMOTE_LOADED = false;
+    CLOUD_LAST_SYNC = "";
+    console.info("Offline snapshot loaded", EMBEDDED_OFFLINE_SNAPSHOT.createdAt || "");
+    return;
+  }
+
+  const hasRemote = await loadCloudState();
+  if(hasRemote){
+    reloadStateFromLocalStorage();
+    CLOUD_READY = true;
+    return;
+  }
+
+  // Safety mode: keep the page usable locally, but NEVER upload local data over Supabase.
+  CLOUD_READY = false;
+  CLOUD_REMOTE_LOADED = false;
+  console.warn("Cloud safety lock active: remote app_state was not loaded, so cloud saving is disabled.");
+  alert("تنبيه أمان: تعذر تحميل الداتا من السيرفر، لذلك تم إيقاف الحفظ أونلاين لحماية التقييمات. لا تدخل تقييمات جديدة قبل عمل Refresh وعودة الاتصال.");
 }
 
 const DEFAULT_USERS = {
@@ -3637,17 +3901,6 @@ function resetAllFilters(){
   renderAllTables();
 }
 
-function deletePreparerRecord(id){
-  const r=preparers.find(x=>String(x.id)===String(id)); if(!r)return;
-  if(!confirm("حذف هذا التقييم؟ سيتم تسجيل الحذف ومزامنته بأمان."))return;
-  addRecordTombstone(r,"preparer"); preparers=preparers.filter(x=>String(x.id)!==String(id)); save(); addActivity("حذف تقييم محضر",`${r.name} | ${r.date}`); renderAll();
-}
-function deleteLeaderRecord(id){
-  const r=leaders.find(x=>String(x.id)===String(id)); if(!r)return;
-  if(!confirm("حذف هذا التقييم؟ سيتم تسجيل الحذف ومزامنته بأمان."))return;
-  addRecordTombstone(r,"leader"); leaders=leaders.filter(x=>String(x.id)!==String(id)); save(); addActivity("حذف تقييم تيم ليدر",`${r.name} | ${r.date}`); renderAll();
-}
-
 function renderAllTables(){
   renderAllDataFilters();
 
@@ -3746,15 +3999,12 @@ if($("smartReportType")) $("smartReportType").addEventListener("input", () => {
 });
 if($("smartReportPerson")) $("smartReportPerson").addEventListener("input", renderView);
 if($("refreshSmartReportBtn")) $("refreshSmartReportBtn").addEventListener("click", renderView);
-if($("clearBtn")) $("clearBtn").onclick=async()=>{
-  const word = prompt("هذه عملية خطيرة جدًا. لن يبدأ المسح إلا بعد إنشاء Backup أونلاين. اكتب DELETE للتأكيد");
+if($("clearBtn")) $("clearBtn").onclick=()=>{
+  const word = prompt("لمسح كل البيانات اكتب DELETE");
   if(word !== "DELETE"){
     alert("تم إلغاء المسح");
     return;
   }
-  preparers.forEach(r=>addRecordTombstone(r,"preparer"));
-  leaders.forEach(r=>addRecordTombstone(r,"leader"));
-  try{ await createCloudBackup(await fetchCloudState().catch(()=>collectCloudState()),"قبل مسح كل البيانات"); }catch(err){ alert("تعذر إنشاء Backup أونلاين، لذلك تم إلغاء المسح لحماية البيانات."); return; }
   preparers=[];
   leaders=[];
   save();
@@ -3767,11 +4017,9 @@ if($("allMonthFilter")) $("allMonthFilter").addEventListener("input", applyAllMo
   if($(id)) $(id).addEventListener("input", renderAllTables);
 });
 if($("resetAllFiltersBtn")) $("resetAllFiltersBtn").addEventListener("click", resetAllFilters);
-if($("syncNowBtn")) $("syncNowBtn").addEventListener("click", saveCloudStateNow);
+if($("offlineDownloadBtn")) $("offlineDownloadBtn").addEventListener("click", downloadOfflineSnapshot);
+if($("backupBtn")) $("backupBtn").addEventListener("click", exportBackup);
 if($("restoreFile")) $("restoreFile").addEventListener("change", restoreBackupFromFile);
-if($("createCloudBackupBtn")) $("createCloudBackupBtn").addEventListener("click", createManualCloudBackup);
-if($("restoreLatestCloudBackupBtn")) $("restoreLatestCloudBackupBtn").addEventListener("click", restoreLatestCloudBackup);
-if($("downloadLatestCloudBackupBtn")) $("downloadLatestCloudBackupBtn").addEventListener("click", downloadLatestCloudBackup);
 
 $("exportBtn").onclick=()=>{
   const lines=["type,date,branch,evaluator,name,total,percent,notes,updatedBy,updatedAt"];
@@ -3786,6 +4034,12 @@ if($("addLeaderCriterionBtn")) $("addLeaderCriterionBtn").addEventListener("clic
 
 async function startApp(){
   await initCloudStorage();
+  if(OFFLINE_SNAPSHOT_MODE){
+    const badge = $("offlineSnapshotBadge");
+    if(badge) badge.classList.remove("hidden");
+    const btn = $("offlineDownloadBtn");
+    if(btn){ btn.textContent = "نسخة Offline"; btn.disabled = true; }
+  }
   renderLoginUsers();
   renderTeamLeaderControls();
   renderInternalLeaderControls();
@@ -3800,10 +4054,6 @@ async function startApp(){
   renderCriteriaForms();
   renderCriteriaSettings();
   calcPScores(); calcLScores();
-  startCloudPolling();
-  await listCloudBackups();
-  updateSecurityCenter();
-  await ensureTenDayAutoBackup();
 }
 startApp();
 
@@ -3813,5 +4063,6 @@ if('serviceWorker' in navigator){
   });
 }
 </script>
-</body>
-</html>
+
+
+</body></html>

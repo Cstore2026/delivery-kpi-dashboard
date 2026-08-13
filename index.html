@@ -3,10 +3,10 @@
 <html lang="ar" dir="rtl"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>KPI Dashboard - Delivery Team V55.16.4</title>
-  <link rel="manifest" href="/manifest.json">
+  <title>KPI Dashboard - Delivery Team V55.16.4 OFFLINE SNAPSHOT</title>
+  <link rel="manifest" href="https://cstore-kpi.vercel.app/manifest.json">
   <meta name="theme-color" content="#c2185b">
-  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <link rel="apple-touch-icon" href="https://cstore-kpi.vercel.app/apple-touch-icon.png">
   <style>
     :root{
       --bg:#fff7fb; --card:#ffffff; --text:#3f1834; --muted:#8b5f78;
@@ -1212,6 +1212,9 @@ let CLOUD_READY = false;
 let CLOUD_REMOTE_LOADED = false;
 let CLOUD_SAVE_TIMER = null;
 let CLOUD_LAST_SYNC = "";
+let CLOUD_LAST_UPDATED_AT = "";
+let CLOUD_SAVE_IN_FLIGHT = false;
+let CLOUD_SAVE_PENDING = false;
 function cloudHeaders(extra={}){
   return Object.assign({
     "apikey": SUPABASE_KEY,
@@ -1297,25 +1300,141 @@ function applyCloudState(state){
   });
   return true;
 }
+function jsonValueEqual(a,b){
+  if(a === b) return true;
+  try{ return JSON.stringify(a) === JSON.stringify(b); }
+  catch(_err){ return false; }
+}
+function mergeJsonThreeWay(baseValue, localValue, remoteValue){
+  if(jsonValueEqual(localValue, baseValue)) return remoteValue;
+  if(jsonValueEqual(remoteValue, baseValue)) return localValue;
+  if(jsonValueEqual(localValue, remoteValue)) return localValue;
+
+  const isObject = v => v && typeof v === "object" && !Array.isArray(v);
+  const hasIdArray = arr => Array.isArray(arr) && arr.every(x => x && typeof x === "object" && !Array.isArray(x) && Object.prototype.hasOwnProperty.call(x,"id"));
+  const primitiveArray = arr => Array.isArray(arr) && arr.every(x => x === null || ["string","number","boolean"].includes(typeof x));
+
+  if(hasIdArray(baseValue || []) && hasIdArray(localValue || []) && hasIdArray(remoteValue || [])){
+    const base = Array.isArray(baseValue) ? baseValue : [];
+    const local = Array.isArray(localValue) ? localValue : [];
+    const remote = Array.isArray(remoteValue) ? remoteValue : [];
+    const byId = arr => new Map(arr.map(item => [String(item.id), item]));
+    const bMap = byId(base), lMap = byId(local), rMap = byId(remote);
+    const order = [];
+    remote.forEach(x => { const k=String(x.id); if(!order.includes(k)) order.push(k); });
+    local.forEach(x => { const k=String(x.id); if(!order.includes(k)) order.push(k); });
+    base.forEach(x => { const k=String(x.id); if(!order.includes(k)) order.push(k); });
+    const merged = [];
+    order.forEach(k => {
+      const b=bMap.get(k), l=lMap.get(k), r=rMap.get(k);
+      let chosen;
+      if(jsonValueEqual(l,b)) chosen=r;
+      else if(jsonValueEqual(r,b)) chosen=l;
+      else if(jsonValueEqual(l,r)) chosen=l;
+      else if(typeof l === "undefined" && typeof r === "undefined") chosen=undefined;
+      else if(typeof l === "undefined") chosen=r; // conflict delete/edit: preserve data
+      else if(typeof r === "undefined") chosen=l; // conflict delete/edit: preserve data
+      else chosen=l; // same record edited on both sides: current save wins
+      if(typeof chosen !== "undefined") merged.push(chosen);
+    });
+    return merged;
+  }
+
+  if(primitiveArray(baseValue || []) && primitiveArray(localValue || []) && primitiveArray(remoteValue || [])){
+    const base = Array.isArray(baseValue) ? baseValue : [];
+    const local = Array.isArray(localValue) ? localValue : [];
+    const remote = Array.isArray(remoteValue) ? remoteValue : [];
+    const key = v => JSON.stringify(v);
+    const b = new Map(base.map(v=>[key(v),v]));
+    const l = new Map(local.map(v=>[key(v),v]));
+    const r = new Map(remote.map(v=>[key(v),v]));
+    const result = [];
+    const seen = new Set();
+    // Keep base values unless either side intentionally removed them.
+    base.forEach(v=>{
+      const k=key(v);
+      if(l.has(k) && r.has(k) && !seen.has(k)){ result.push(v); seen.add(k); }
+    });
+    // Keep additions from both sides.
+    remote.forEach(v=>{
+      const k=key(v);
+      if(!b.has(k) && !seen.has(k)){ result.push(v); seen.add(k); }
+    });
+    local.forEach(v=>{
+      const k=key(v);
+      if(!b.has(k) && !seen.has(k)){ result.push(v); seen.add(k); }
+    });
+    return result;
+  }
+
+  if(isObject(baseValue) || isObject(localValue) || isObject(remoteValue)){
+    const b = isObject(baseValue) ? baseValue : {};
+    const l = isObject(localValue) ? localValue : {};
+    const r = isObject(remoteValue) ? remoteValue : {};
+    const out = {};
+    const keys = new Set([...Object.keys(b), ...Object.keys(l), ...Object.keys(r)]);
+    keys.forEach(k => {
+      const merged = mergeJsonThreeWay(b[k], l[k], r[k]);
+      if(typeof merged !== "undefined") out[k] = merged;
+    });
+    return out;
+  }
+
+  // Unknown concurrent scalar conflict: keep the current user's intended change.
+  return localValue;
+}
+function mergeCloudStateThreeWay(baseState, localState, remoteState){
+  const out = {};
+  const keys = new Set([
+    ...CLOUD_STORAGE_KEYS,
+    ...Object.keys(baseState || {}),
+    ...Object.keys(localState || {}),
+    ...Object.keys(remoteState || {})
+  ]);
+  keys.forEach(k => {
+    const bRaw = baseState ? baseState[k] : null;
+    const lRaw = localState ? localState[k] : null;
+    const rRaw = remoteState ? remoteState[k] : null;
+    if(lRaw === bRaw){ out[k] = rRaw; return; }
+    if(rRaw === bRaw){ out[k] = lRaw; return; }
+    if(lRaw === rRaw){ out[k] = lRaw; return; }
+    try{
+      const b = (bRaw === null || typeof bRaw === "undefined") ? undefined : JSON.parse(bRaw);
+      const l = (lRaw === null || typeof lRaw === "undefined") ? undefined : JSON.parse(lRaw);
+      const r = (rRaw === null || typeof rRaw === "undefined") ? undefined : JSON.parse(rRaw);
+      const merged = mergeJsonThreeWay(b,l,r);
+      out[k] = typeof merged === "undefined" ? null : JSON.stringify(merged);
+    }catch(_err){
+      // If a storage value is not JSON, use normal three-way preference without touching unrelated remote changes.
+      out[k] = lRaw;
+    }
+  });
+  return out;
+}
+async function fetchRemoteCloudRow(){
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/kpi_store?key=eq.${encodeURIComponent(CLOUD_ROW_KEY)}&select=value,updated_at`, {
+    headers: cloudHeaders({"Accept":"application/json"}),
+    cache: "no-store"
+  });
+  if(!res.ok) throw new Error(await res.text());
+  const rows = await res.json();
+  if(!rows || !rows[0] || !rows[0].value || !rows[0].updated_at){
+    throw new Error("app_state row is missing or incomplete");
+  }
+  const state = JSON.parse(rows[0].value);
+  if(!state || typeof state !== "object" ||
+     typeof state["kpi_preparers_v3"] === "undefined" ||
+     typeof state["kpi_leaders_v3"] === "undefined"){
+    throw new Error("app_state payload is invalid");
+  }
+  return {value: rows[0].value, updated_at: rows[0].updated_at, state};
+}
 async function loadCloudState(){
   try{
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/kpi_store?key=eq.${encodeURIComponent(CLOUD_ROW_KEY)}&select=value`, {
-      headers: cloudHeaders({"Accept":"application/json"}),
-      cache: "no-store"
-    });
-    if(!res.ok) throw new Error(await res.text());
-    const rows = await res.json();
-    if(!rows || !rows[0] || !rows[0].value) throw new Error("app_state row is missing or empty");
-
-    const remoteState = JSON.parse(rows[0].value);
-    if(!remoteState || typeof remoteState !== "object" ||
-       typeof remoteState["kpi_preparers_v3"] === "undefined" ||
-       typeof remoteState["kpi_leaders_v3"] === "undefined"){
-      throw new Error("app_state payload is invalid");
-    }
-
-    applyCloudState(remoteState);
-    CLOUD_LAST_SYNC = rows[0].value;
+    const row = await fetchRemoteCloudRow();
+    applyCloudState(row.state);
+    CLOUD_LAST_SYNC = row.value;
+    CLOUD_LAST_UPDATED_AT = row.updated_at;
     CLOUD_REMOTE_LOADED = true;
     return true;
   }catch(err){
@@ -1326,34 +1445,102 @@ async function loadCloudState(){
   return false;
 }
 async function saveCloudStateNow(){
-  // FAIL CLOSED: never write to Supabase unless this page successfully loaded app_state first.
+  // FAIL CLOSED: never write unless this page successfully loaded app_state first.
   if(!CLOUD_READY || !CLOUD_REMOTE_LOADED || !CLOUD_LAST_SYNC) return;
-  try{
-    const value = JSON.stringify(collectCloudState());
-    if(value === CLOUD_LAST_SYNC) return;
+  if(CLOUD_SAVE_IN_FLIGHT){
+    CLOUD_SAVE_PENDING = true;
+    return;
+  }
 
-    // Update the existing app_state row only. Never create/replace it after a failed load.
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/kpi_store?key=eq.${encodeURIComponent(CLOUD_ROW_KEY)}`, {
-      method: "PATCH",
-      headers: cloudHeaders({"Prefer":"return=representation"}),
-      body: JSON.stringify({value, updated_at: new Date().toISOString()})
-    });
-    if(!res.ok) throw new Error(await res.text());
-    const updatedRows = await res.json();
-    if(!Array.isArray(updatedRows) || updatedRows.length !== 1){
-      throw new Error("Safety lock: app_state was not updated exactly once");
+  CLOUD_SAVE_IN_FLIGHT = true;
+  const localSnapshot = collectCloudState();
+  const localSnapshotValue = JSON.stringify(localSnapshot);
+  const baseState = JSON.parse(CLOUD_LAST_SYNC);
+  let savedServerState = null;
+  let savedServerValue = "";
+  let savedUpdatedAt = "";
+
+  try{
+    // If nothing changed locally since the last successful sync, there is nothing to write.
+    if(localSnapshotValue === CLOUD_LAST_SYNC) return;
+
+    const MAX_RETRIES = 5;
+    for(let attempt=1; attempt<=MAX_RETRIES; attempt++){
+      const latest = await fetchRemoteCloudRow();
+      const mergedState = mergeCloudStateThreeWay(baseState, localSnapshot, latest.state);
+      const mergedValue = JSON.stringify(mergedState);
+
+      // Another phone may already have written an equivalent merged state.
+      if(mergedValue === latest.value){
+        savedServerState = latest.state;
+        savedServerValue = latest.value;
+        savedUpdatedAt = latest.updated_at;
+        break;
+      }
+
+      // Optimistic lock: update only if the row is still exactly the version we just read.
+      const patchUrl = `${SUPABASE_URL}/rest/v1/kpi_store?key=eq.${encodeURIComponent(CLOUD_ROW_KEY)}&updated_at=eq.${encodeURIComponent(latest.updated_at)}&select=value,updated_at`;
+      const res = await fetch(patchUrl, {
+        method: "PATCH",
+        headers: cloudHeaders({"Prefer":"return=representation"}),
+        body: JSON.stringify({value: mergedValue, updated_at: new Date().toISOString()})
+      });
+      if(!res.ok) throw new Error(await res.text());
+      const updatedRows = await res.json();
+
+      if(Array.isArray(updatedRows) && updatedRows.length === 1){
+        savedServerValue = updatedRows[0].value || mergedValue;
+        savedUpdatedAt = updatedRows[0].updated_at || "";
+        savedServerState = JSON.parse(savedServerValue);
+        break;
+      }
+
+      // 0 rows means another device saved between our GET and PATCH. Retry with its newest state.
+      if(attempt === MAX_RETRIES){
+        throw new Error("Concurrent save retry limit reached");
+      }
     }
-    CLOUD_LAST_SYNC = value;
+
+    if(!savedServerState || !savedServerValue){
+      throw new Error("Cloud save did not produce a confirmed state");
+    }
+
+    CLOUD_LAST_SYNC = savedServerValue;
+    CLOUD_LAST_UPDATED_AT = savedUpdatedAt;
+
+    // Pull remote additions into this phone without losing a second local change made while the request was running.
+    const currentLocal = collectCloudState();
+    const changedAgainWhileSaving = JSON.stringify(currentLocal) !== localSnapshotValue;
+    const stateForThisPhone = changedAgainWhileSaving
+      ? mergeCloudStateThreeWay(localSnapshot, currentLocal, savedServerState)
+      : savedServerState;
+
+    applyCloudState(stateForThisPhone);
+    reloadStateFromLocalStorage();
+    // Keep the cloud merge separate from UI rendering. The normal form flow already renders locally.
+    console.info("Supabase concurrency-safe save completed");
+
+    if(changedAgainWhileSaving) CLOUD_SAVE_PENDING = true;
   }catch(err){
-    console.warn("Supabase save failed", err);
+    console.warn("Supabase concurrency-safe save failed", err);
     alert("تعذر حفظ البيانات أونلاين. تم إيقاف المزامنة السحابية لهذه الجلسة لحماية الداتا. اعمل Refresh بعد التأكد من الاتصال.");
     CLOUD_READY = false;
     CLOUD_REMOTE_LOADED = false;
     clearTimeout(CLOUD_SAVE_TIMER);
+  }finally{
+    CLOUD_SAVE_IN_FLIGHT = false;
+    if(CLOUD_SAVE_PENDING && CLOUD_READY && CLOUD_REMOTE_LOADED){
+      CLOUD_SAVE_PENDING = false;
+      scheduleCloudSave();
+    }
   }
 }
 function scheduleCloudSave(){
   if(!CLOUD_READY || !CLOUD_REMOTE_LOADED || !CLOUD_LAST_SYNC) return;
+  if(CLOUD_SAVE_IN_FLIGHT){
+    CLOUD_SAVE_PENDING = true;
+    return;
+  }
   clearTimeout(CLOUD_SAVE_TIMER);
   CLOUD_SAVE_TIMER = setTimeout(saveCloudStateNow, 600);
 }
@@ -1382,6 +1569,7 @@ async function initCloudStorage(){
     CLOUD_READY = false;
     CLOUD_REMOTE_LOADED = false;
     CLOUD_LAST_SYNC = "";
+    CLOUD_LAST_UPDATED_AT = "";
     console.info("Offline snapshot loaded", EMBEDDED_OFFLINE_SNAPSHOT.createdAt || "");
     return;
   }

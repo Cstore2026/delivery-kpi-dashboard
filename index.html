@@ -1517,7 +1517,8 @@ async function saveCloudStateNow(){
 
     applyCloudState(stateForThisPhone);
     reloadStateFromLocalStorage();
-    if(typeof renderAll === "function" && currentUser) renderAll();
+    // Keep the cloud merge separate from UI rendering. The normal form flow already renders locally.
+    console.info("Supabase concurrency-safe save completed");
 
     if(changedAgainWhileSaving) CLOUD_SAVE_PENDING = true;
   }catch(err){

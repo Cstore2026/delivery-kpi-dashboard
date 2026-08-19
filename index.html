@@ -3,10 +3,10 @@
 <html lang="ar" dir="rtl"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>KPI Dashboard - Delivery Team V55.16.4 OFFLINE SNAPSHOT</title>
-  <link rel="manifest" href="https://cstore-kpi.vercel.app/manifest.json">
+  <title>KPI Dashboard - Delivery Team V55.16.4</title>
+  <link rel="manifest" href="/manifest.json">
   <meta name="theme-color" content="#c2185b">
-  <link rel="apple-touch-icon" href="https://cstore-kpi.vercel.app/apple-touch-icon.png">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
   <style>
     :root{
       --bg:#fff7fb; --card:#ffffff; --text:#3f1834; --muted:#8b5f78;
@@ -250,7 +250,7 @@
       <p id="roleText" class="hidden"></p>
     </div>
     <div class="actions no-print" style="margin:0">
-      <button class="btn light" type="button" id="offlineDownloadBtn">تنزيل نسخة Offline كاملة</button>
+      <button class="btn light hidden" type="button" id="onlineBackupBtn">Backup Online</button>
       <button class="btn light" type="button" id="themeToggle">Dark Mode</button>
       <button class="btn light" id="logoutBtn">تسجيل خروج</button>
     </div>
@@ -565,6 +565,19 @@
     <div class="card">
       <h2>إعدادات الداش</h2>
       <p style="color:var(--muted);margin-top:-6px">الصفحة دي تظهر للسوبر فايزر فقط.</p>
+
+      <div class="card" style="box-shadow:none;border-style:dashed;margin-bottom:18px">
+        <h3 style="margin-top:0">النسخ الاحتياطية Online</h3>
+        <p style="color:var(--muted);margin-top:-4px">
+          إنشاء نسخة احتياطية مستقلة على Supabase. عند استعادة أي نسخة، يتم أولاً إنشاء Backup للحالة الحالية تلقائيًا قبل تنفيذ الاستعادة.
+        </p>
+        <div class="actions">
+          <button class="btn" type="button" id="createOnlineBackupBtn">إنشاء Backup Online الآن</button>
+          <button class="btn light" type="button" id="refreshOnlineBackupsBtn">تحديث القائمة</button>
+        </div>
+        <div id="onlineBackupsStatus" class="role-note" style="margin-top:12px">اضغط تحديث القائمة لعرض النسخ المحفوظة.</div>
+        <div id="onlineBackupsTable" style="margin-top:12px"></div>
+      </div>
 
       <div class="grid grid-2">
         <div class="card" style="box-shadow:none;border-style:dashed">
@@ -1194,6 +1207,7 @@ const MONTHLY_LEADER_MAX = 840;
 const SUPABASE_URL = "https://hgybmvcnwdsacskwwzvj.supabase.co";
 const SUPABASE_KEY = "sb_publishable_bEnd7r_X_3OythYvVD7iHQ_zxrQ_BkL";
 const CLOUD_ROW_KEY = "app_state";
+const ONLINE_BACKUP_PREFIX = "backup.";
 const CLOUD_STORAGE_KEYS = [
   "kpi_users_v1",
   "kpi_branch_by_leader_v1",
@@ -1212,9 +1226,6 @@ let CLOUD_READY = false;
 let CLOUD_REMOTE_LOADED = false;
 let CLOUD_SAVE_TIMER = null;
 let CLOUD_LAST_SYNC = "";
-let CLOUD_LAST_UPDATED_AT = "";
-let CLOUD_SAVE_IN_FLIGHT = false;
-let CLOUD_SAVE_PENDING = false;
 function cloudHeaders(extra={}){
   return Object.assign({
     "apikey": SUPABASE_KEY,
@@ -1226,6 +1237,187 @@ function collectCloudState(){
   const out = {};
   CLOUD_STORAGE_KEYS.forEach(k => out[k] = localStorage.getItem(k));
   return out;
+}
+function collectLiveCloudState(){
+  const state = collectCloudState();
+  state["kpi_users_v1"] = JSON.stringify(USERS);
+  state["kpi_branch_by_leader_v1"] = JSON.stringify(BRANCH_BY_LEADER);
+  state["kpi_leader_internal_names_v1"] = JSON.stringify(LEADER_INTERNAL_NAMES);
+  state["kpi_hidden_branches_v1"] = JSON.stringify(HIDDEN_BRANCHES);
+  state["kpi_preparers_v3"] = JSON.stringify(preparers);
+  state["kpi_leaders_v3"] = JSON.stringify(leaders);
+  state["kpi_preparer_names_v1"] = JSON.stringify(preparerNames);
+  state["kpi_activity_log_v1"] = JSON.stringify(activityLog);
+  state["kpi_transfer_log_v1"] = JSON.stringify(transferLog);
+  state["kpi_eval_criteria_v1"] = JSON.stringify({preparer: PREPARER_CRITERIA, leader: LEADER_CRITERIA});
+  return state;
+}
+function isValidBackupState(state){
+  return !!(state && typeof state === "object" &&
+    typeof state["kpi_preparers_v3"] !== "undefined" &&
+    typeof state["kpi_leaders_v3"] !== "undefined");
+}
+function setOnlineBackupStatus(text){
+  const box = $("onlineBackupsStatus");
+  if(box) box.textContent = text;
+}
+async function createOnlineBackup(options={}){
+  const silent = !!options.silent;
+  const reason = options.reason || "manual";
+
+  if(currentRole !== "supervisor"){
+    if(!silent) alert("الـ Backup Online متاح للسوبر فايزر فقط.");
+    return {ok:false};
+  }
+  if(OFFLINE_SNAPSHOT_MODE || !CLOUD_READY || !CLOUD_REMOTE_LOADED || !CLOUD_LAST_SYNC){
+    if(!silent) alert("لا يمكن إنشاء Backup Online لأن الاتصال الآمن بـ Supabase غير جاهز. اعمل Refresh وتأكد أن الداتا ظاهرة بالكامل ثم حاول مرة أخرى.");
+    return {ok:false};
+  }
+
+  const createdAt = new Date().toISOString();
+  const state = collectLiveCloudState();
+  const snapshot = {
+    version: 1,
+    createdAt,
+    createdBy: currentUser || "سوبر فايزر",
+    reason,
+    preparerEvaluations: preparers.length,
+    leaderEvaluations: leaders.length,
+    state
+  };
+  const key = ONLINE_BACKUP_PREFIX + createdAt.replace(/[:.]/g, "-");
+
+  try{
+    if(!silent) setOnlineBackupStatus("جاري إنشاء Backup Online...");
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/kpi_store`, {
+      method: "POST",
+      headers: cloudHeaders({"Prefer":"return=representation"}),
+      body: JSON.stringify({key, value: JSON.stringify(snapshot), updated_at: createdAt})
+    });
+    if(!res.ok) throw new Error(await res.text());
+    const rows = await res.json();
+    if(!Array.isArray(rows) || rows.length !== 1) throw new Error("Backup row was not created exactly once");
+
+    if(!silent){
+      setOnlineBackupStatus(`تم إنشاء Backup Online بنجاح — ${preparers.length} تقييم محضر و ${leaders.length} تقييم تيم ليدر.`);
+      alert("تم إنشاء Backup Online بنجاح على Supabase.");
+      await renderOnlineBackups();
+    }
+    return {ok:true, key};
+  }catch(err){
+    console.warn("Online backup failed", err);
+    if(!silent){
+      setOnlineBackupStatus("تعذر إنشاء Backup Online. لم يتم تغيير أو حذف أي بيانات.");
+      alert("تعذر إنشاء Backup Online على Supabase. لم يتم تغيير أو حذف أي بيانات.");
+    }
+    return {ok:false, error:err};
+  }
+}
+async function renderOnlineBackups(){
+  const tableBox = $("onlineBackupsTable");
+  if(!tableBox || currentRole !== "supervisor") return;
+
+  if(OFFLINE_SNAPSHOT_MODE || !CLOUD_READY || !CLOUD_REMOTE_LOADED){
+    tableBox.innerHTML = "";
+    setOnlineBackupStatus("الاتصال الآمن بـ Supabase غير جاهز حاليًا.");
+    return;
+  }
+
+  setOnlineBackupStatus("جاري تحميل النسخ المحفوظة...");
+  try{
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/kpi_store?select=key,updated_at&order=updated_at.desc&limit=200`, {
+      headers: cloudHeaders({"Accept":"application/json"}),
+      cache: "no-store"
+    });
+    if(!res.ok) throw new Error(await res.text());
+    const rows = (await res.json()).filter(r => String(r.key || "").startsWith(ONLINE_BACKUP_PREFIX));
+
+    if(!rows.length){
+      tableBox.innerHTML = "";
+      setOnlineBackupStatus("لا توجد نسخ Backup Online محفوظة حتى الآن.");
+      return;
+    }
+
+    const bodyRows = rows.map((r, index) => {
+      const dt = r.updated_at ? new Date(r.updated_at).toLocaleString("ar-EG") : String(r.key || "").slice(ONLINE_BACKUP_PREFIX.length);
+      return `<tr>
+        <td>${index + 1}</td>
+        <td>${esc(dt)}</td>
+        <td><button class="btn light" type="button" onclick="restoreOnlineBackup('${String(r.key || "").replace(/'/g,"\\'")}')">استعادة النسخة</button></td>
+      </tr>`;
+    });
+    tableBox.innerHTML = table(["#","تاريخ النسخة","إجراء"], bodyRows);
+    setOnlineBackupStatus(`تم العثور على ${rows.length} نسخة Backup Online.`);
+  }catch(err){
+    console.warn("Online backups list failed", err);
+    tableBox.innerHTML = "";
+    setOnlineBackupStatus("تعذر تحميل قائمة النسخ من Supabase.");
+  }
+}
+async function restoreOnlineBackup(key){
+  if(currentRole !== "supervisor"){
+    alert("استعادة النسخ متاحة للسوبر فايزر فقط.");
+    return;
+  }
+  if(!key || !String(key).startsWith(ONLINE_BACKUP_PREFIX)) return;
+  if(OFFLINE_SNAPSHOT_MODE || !CLOUD_READY || !CLOUD_REMOTE_LOADED || !CLOUD_LAST_SYNC){
+    alert("لا يمكن الاستعادة لأن الاتصال الآمن بـ Supabase غير جاهز.");
+    return;
+  }
+
+  try{
+    setOnlineBackupStatus("جاري قراءة النسخة المختارة...");
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/kpi_store?key=eq.${encodeURIComponent(key)}&select=value,updated_at`, {
+      headers: cloudHeaders({"Accept":"application/json"}),
+      cache: "no-store"
+    });
+    if(!res.ok) throw new Error(await res.text());
+    const rows = await res.json();
+    if(!rows || !rows[0] || !rows[0].value) throw new Error("Backup row is missing");
+
+    const snapshot = JSON.parse(rows[0].value);
+    if(!snapshot || !isValidBackupState(snapshot.state)) throw new Error("Backup payload is invalid");
+
+    const backupDate = rows[0].updated_at ? new Date(rows[0].updated_at).toLocaleString("ar-EG") : (snapshot.createdAt || key);
+    const pCount = Number(snapshot.preparerEvaluations || 0);
+    const lCount = Number(snapshot.leaderEvaluations || 0);
+    const ok = confirm(`استعادة Backup بتاريخ ${backupDate}؟\nتقييمات المحضرين: ${pCount}\nتقييمات التيم ليدر: ${lCount}\n\nسيتم أولاً إنشاء Backup Online للحالة الحالية تلقائيًا، وبعدها تنفيذ الاستعادة.`);
+    if(!ok){
+      setOnlineBackupStatus("تم إلغاء الاستعادة.");
+      return;
+    }
+
+    setOnlineBackupStatus("جاري إنشاء نسخة أمان للحالة الحالية قبل الاستعادة...");
+    const safetyBackup = await createOnlineBackup({silent:true, reason:"before_restore"});
+    if(!safetyBackup.ok){
+      setOnlineBackupStatus("تم إلغاء الاستعادة لأن Backup الأمان للحالة الحالية لم ينجح.");
+      alert("تم إلغاء الاستعادة لحماية الداتا، لأن إنشاء Backup للحالة الحالية لم ينجح.");
+      return;
+    }
+
+    clearTimeout(CLOUD_SAVE_TIMER);
+    const restoredValue = JSON.stringify(snapshot.state);
+    setOnlineBackupStatus("جاري استعادة النسخة على Supabase...");
+    const restoreRes = await fetch(`${SUPABASE_URL}/rest/v1/kpi_store?key=eq.${encodeURIComponent(CLOUD_ROW_KEY)}`, {
+      method: "PATCH",
+      headers: cloudHeaders({"Prefer":"return=representation"}),
+      body: JSON.stringify({value: restoredValue, updated_at: new Date().toISOString()})
+    });
+    if(!restoreRes.ok) throw new Error(await restoreRes.text());
+    const restoredRows = await restoreRes.json();
+    if(!Array.isArray(restoredRows) || restoredRows.length !== 1) throw new Error("Safety lock: app_state was not restored exactly once");
+
+    applyCloudState(snapshot.state);
+    CLOUD_LAST_SYNC = restoredValue;
+    CLOUD_READY = true;
+    CLOUD_REMOTE_LOADED = true;
+    alert("تمت استعادة النسخة بنجاح. سيتم إعادة تحميل الداش الآن.");
+    location.reload();
+  }catch(err){
+    console.warn("Online restore failed", err);
+    setOnlineBackupStatus("تعذرت الاستعادة. لم يتم حذف النسخة الاحتياطية.");
+    alert("تعذرت استعادة النسخة. لم يتم حذف أي Backup محفوظ.");
+  }
 }
 async function downloadOfflineSnapshot(){
   if(OFFLINE_SNAPSHOT_MODE){
@@ -1300,141 +1492,25 @@ function applyCloudState(state){
   });
   return true;
 }
-function jsonValueEqual(a,b){
-  if(a === b) return true;
-  try{ return JSON.stringify(a) === JSON.stringify(b); }
-  catch(_err){ return false; }
-}
-function mergeJsonThreeWay(baseValue, localValue, remoteValue){
-  if(jsonValueEqual(localValue, baseValue)) return remoteValue;
-  if(jsonValueEqual(remoteValue, baseValue)) return localValue;
-  if(jsonValueEqual(localValue, remoteValue)) return localValue;
-
-  const isObject = v => v && typeof v === "object" && !Array.isArray(v);
-  const hasIdArray = arr => Array.isArray(arr) && arr.every(x => x && typeof x === "object" && !Array.isArray(x) && Object.prototype.hasOwnProperty.call(x,"id"));
-  const primitiveArray = arr => Array.isArray(arr) && arr.every(x => x === null || ["string","number","boolean"].includes(typeof x));
-
-  if(hasIdArray(baseValue || []) && hasIdArray(localValue || []) && hasIdArray(remoteValue || [])){
-    const base = Array.isArray(baseValue) ? baseValue : [];
-    const local = Array.isArray(localValue) ? localValue : [];
-    const remote = Array.isArray(remoteValue) ? remoteValue : [];
-    const byId = arr => new Map(arr.map(item => [String(item.id), item]));
-    const bMap = byId(base), lMap = byId(local), rMap = byId(remote);
-    const order = [];
-    remote.forEach(x => { const k=String(x.id); if(!order.includes(k)) order.push(k); });
-    local.forEach(x => { const k=String(x.id); if(!order.includes(k)) order.push(k); });
-    base.forEach(x => { const k=String(x.id); if(!order.includes(k)) order.push(k); });
-    const merged = [];
-    order.forEach(k => {
-      const b=bMap.get(k), l=lMap.get(k), r=rMap.get(k);
-      let chosen;
-      if(jsonValueEqual(l,b)) chosen=r;
-      else if(jsonValueEqual(r,b)) chosen=l;
-      else if(jsonValueEqual(l,r)) chosen=l;
-      else if(typeof l === "undefined" && typeof r === "undefined") chosen=undefined;
-      else if(typeof l === "undefined") chosen=r; // conflict delete/edit: preserve data
-      else if(typeof r === "undefined") chosen=l; // conflict delete/edit: preserve data
-      else chosen=l; // same record edited on both sides: current save wins
-      if(typeof chosen !== "undefined") merged.push(chosen);
-    });
-    return merged;
-  }
-
-  if(primitiveArray(baseValue || []) && primitiveArray(localValue || []) && primitiveArray(remoteValue || [])){
-    const base = Array.isArray(baseValue) ? baseValue : [];
-    const local = Array.isArray(localValue) ? localValue : [];
-    const remote = Array.isArray(remoteValue) ? remoteValue : [];
-    const key = v => JSON.stringify(v);
-    const b = new Map(base.map(v=>[key(v),v]));
-    const l = new Map(local.map(v=>[key(v),v]));
-    const r = new Map(remote.map(v=>[key(v),v]));
-    const result = [];
-    const seen = new Set();
-    // Keep base values unless either side intentionally removed them.
-    base.forEach(v=>{
-      const k=key(v);
-      if(l.has(k) && r.has(k) && !seen.has(k)){ result.push(v); seen.add(k); }
-    });
-    // Keep additions from both sides.
-    remote.forEach(v=>{
-      const k=key(v);
-      if(!b.has(k) && !seen.has(k)){ result.push(v); seen.add(k); }
-    });
-    local.forEach(v=>{
-      const k=key(v);
-      if(!b.has(k) && !seen.has(k)){ result.push(v); seen.add(k); }
-    });
-    return result;
-  }
-
-  if(isObject(baseValue) || isObject(localValue) || isObject(remoteValue)){
-    const b = isObject(baseValue) ? baseValue : {};
-    const l = isObject(localValue) ? localValue : {};
-    const r = isObject(remoteValue) ? remoteValue : {};
-    const out = {};
-    const keys = new Set([...Object.keys(b), ...Object.keys(l), ...Object.keys(r)]);
-    keys.forEach(k => {
-      const merged = mergeJsonThreeWay(b[k], l[k], r[k]);
-      if(typeof merged !== "undefined") out[k] = merged;
-    });
-    return out;
-  }
-
-  // Unknown concurrent scalar conflict: keep the current user's intended change.
-  return localValue;
-}
-function mergeCloudStateThreeWay(baseState, localState, remoteState){
-  const out = {};
-  const keys = new Set([
-    ...CLOUD_STORAGE_KEYS,
-    ...Object.keys(baseState || {}),
-    ...Object.keys(localState || {}),
-    ...Object.keys(remoteState || {})
-  ]);
-  keys.forEach(k => {
-    const bRaw = baseState ? baseState[k] : null;
-    const lRaw = localState ? localState[k] : null;
-    const rRaw = remoteState ? remoteState[k] : null;
-    if(lRaw === bRaw){ out[k] = rRaw; return; }
-    if(rRaw === bRaw){ out[k] = lRaw; return; }
-    if(lRaw === rRaw){ out[k] = lRaw; return; }
-    try{
-      const b = (bRaw === null || typeof bRaw === "undefined") ? undefined : JSON.parse(bRaw);
-      const l = (lRaw === null || typeof lRaw === "undefined") ? undefined : JSON.parse(lRaw);
-      const r = (rRaw === null || typeof rRaw === "undefined") ? undefined : JSON.parse(rRaw);
-      const merged = mergeJsonThreeWay(b,l,r);
-      out[k] = typeof merged === "undefined" ? null : JSON.stringify(merged);
-    }catch(_err){
-      // If a storage value is not JSON, use normal three-way preference without touching unrelated remote changes.
-      out[k] = lRaw;
-    }
-  });
-  return out;
-}
-async function fetchRemoteCloudRow(){
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/kpi_store?key=eq.${encodeURIComponent(CLOUD_ROW_KEY)}&select=value,updated_at`, {
-    headers: cloudHeaders({"Accept":"application/json"}),
-    cache: "no-store"
-  });
-  if(!res.ok) throw new Error(await res.text());
-  const rows = await res.json();
-  if(!rows || !rows[0] || !rows[0].value || !rows[0].updated_at){
-    throw new Error("app_state row is missing or incomplete");
-  }
-  const state = JSON.parse(rows[0].value);
-  if(!state || typeof state !== "object" ||
-     typeof state["kpi_preparers_v3"] === "undefined" ||
-     typeof state["kpi_leaders_v3"] === "undefined"){
-    throw new Error("app_state payload is invalid");
-  }
-  return {value: rows[0].value, updated_at: rows[0].updated_at, state};
-}
 async function loadCloudState(){
   try{
-    const row = await fetchRemoteCloudRow();
-    applyCloudState(row.state);
-    CLOUD_LAST_SYNC = row.value;
-    CLOUD_LAST_UPDATED_AT = row.updated_at;
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/kpi_store?key=eq.${encodeURIComponent(CLOUD_ROW_KEY)}&select=value`, {
+      headers: cloudHeaders({"Accept":"application/json"}),
+      cache: "no-store"
+    });
+    if(!res.ok) throw new Error(await res.text());
+    const rows = await res.json();
+    if(!rows || !rows[0] || !rows[0].value) throw new Error("app_state row is missing or empty");
+
+    const remoteState = JSON.parse(rows[0].value);
+    if(!remoteState || typeof remoteState !== "object" ||
+       typeof remoteState["kpi_preparers_v3"] === "undefined" ||
+       typeof remoteState["kpi_leaders_v3"] === "undefined"){
+      throw new Error("app_state payload is invalid");
+    }
+
+    applyCloudState(remoteState);
+    CLOUD_LAST_SYNC = rows[0].value;
     CLOUD_REMOTE_LOADED = true;
     return true;
   }catch(err){
@@ -1445,102 +1521,34 @@ async function loadCloudState(){
   return false;
 }
 async function saveCloudStateNow(){
-  // FAIL CLOSED: never write unless this page successfully loaded app_state first.
+  // FAIL CLOSED: never write to Supabase unless this page successfully loaded app_state first.
   if(!CLOUD_READY || !CLOUD_REMOTE_LOADED || !CLOUD_LAST_SYNC) return;
-  if(CLOUD_SAVE_IN_FLIGHT){
-    CLOUD_SAVE_PENDING = true;
-    return;
-  }
-
-  CLOUD_SAVE_IN_FLIGHT = true;
-  const localSnapshot = collectCloudState();
-  const localSnapshotValue = JSON.stringify(localSnapshot);
-  const baseState = JSON.parse(CLOUD_LAST_SYNC);
-  let savedServerState = null;
-  let savedServerValue = "";
-  let savedUpdatedAt = "";
-
   try{
-    // If nothing changed locally since the last successful sync, there is nothing to write.
-    if(localSnapshotValue === CLOUD_LAST_SYNC) return;
+    const value = JSON.stringify(collectCloudState());
+    if(value === CLOUD_LAST_SYNC) return;
 
-    const MAX_RETRIES = 5;
-    for(let attempt=1; attempt<=MAX_RETRIES; attempt++){
-      const latest = await fetchRemoteCloudRow();
-      const mergedState = mergeCloudStateThreeWay(baseState, localSnapshot, latest.state);
-      const mergedValue = JSON.stringify(mergedState);
-
-      // Another phone may already have written an equivalent merged state.
-      if(mergedValue === latest.value){
-        savedServerState = latest.state;
-        savedServerValue = latest.value;
-        savedUpdatedAt = latest.updated_at;
-        break;
-      }
-
-      // Optimistic lock: update only if the row is still exactly the version we just read.
-      const patchUrl = `${SUPABASE_URL}/rest/v1/kpi_store?key=eq.${encodeURIComponent(CLOUD_ROW_KEY)}&updated_at=eq.${encodeURIComponent(latest.updated_at)}&select=value,updated_at`;
-      const res = await fetch(patchUrl, {
-        method: "PATCH",
-        headers: cloudHeaders({"Prefer":"return=representation"}),
-        body: JSON.stringify({value: mergedValue, updated_at: new Date().toISOString()})
-      });
-      if(!res.ok) throw new Error(await res.text());
-      const updatedRows = await res.json();
-
-      if(Array.isArray(updatedRows) && updatedRows.length === 1){
-        savedServerValue = updatedRows[0].value || mergedValue;
-        savedUpdatedAt = updatedRows[0].updated_at || "";
-        savedServerState = JSON.parse(savedServerValue);
-        break;
-      }
-
-      // 0 rows means another device saved between our GET and PATCH. Retry with its newest state.
-      if(attempt === MAX_RETRIES){
-        throw new Error("Concurrent save retry limit reached");
-      }
+    // Update the existing app_state row only. Never create/replace it after a failed load.
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/kpi_store?key=eq.${encodeURIComponent(CLOUD_ROW_KEY)}`, {
+      method: "PATCH",
+      headers: cloudHeaders({"Prefer":"return=representation"}),
+      body: JSON.stringify({value, updated_at: new Date().toISOString()})
+    });
+    if(!res.ok) throw new Error(await res.text());
+    const updatedRows = await res.json();
+    if(!Array.isArray(updatedRows) || updatedRows.length !== 1){
+      throw new Error("Safety lock: app_state was not updated exactly once");
     }
-
-    if(!savedServerState || !savedServerValue){
-      throw new Error("Cloud save did not produce a confirmed state");
-    }
-
-    CLOUD_LAST_SYNC = savedServerValue;
-    CLOUD_LAST_UPDATED_AT = savedUpdatedAt;
-
-    // Pull remote additions into this phone without losing a second local change made while the request was running.
-    const currentLocal = collectCloudState();
-    const changedAgainWhileSaving = JSON.stringify(currentLocal) !== localSnapshotValue;
-    const stateForThisPhone = changedAgainWhileSaving
-      ? mergeCloudStateThreeWay(localSnapshot, currentLocal, savedServerState)
-      : savedServerState;
-
-    applyCloudState(stateForThisPhone);
-    reloadStateFromLocalStorage();
-    // Keep the cloud merge separate from UI rendering. The normal form flow already renders locally.
-    console.info("Supabase concurrency-safe save completed");
-
-    if(changedAgainWhileSaving) CLOUD_SAVE_PENDING = true;
+    CLOUD_LAST_SYNC = value;
   }catch(err){
-    console.warn("Supabase concurrency-safe save failed", err);
+    console.warn("Supabase save failed", err);
     alert("تعذر حفظ البيانات أونلاين. تم إيقاف المزامنة السحابية لهذه الجلسة لحماية الداتا. اعمل Refresh بعد التأكد من الاتصال.");
     CLOUD_READY = false;
     CLOUD_REMOTE_LOADED = false;
     clearTimeout(CLOUD_SAVE_TIMER);
-  }finally{
-    CLOUD_SAVE_IN_FLIGHT = false;
-    if(CLOUD_SAVE_PENDING && CLOUD_READY && CLOUD_REMOTE_LOADED){
-      CLOUD_SAVE_PENDING = false;
-      scheduleCloudSave();
-    }
   }
 }
 function scheduleCloudSave(){
   if(!CLOUD_READY || !CLOUD_REMOTE_LOADED || !CLOUD_LAST_SYNC) return;
-  if(CLOUD_SAVE_IN_FLIGHT){
-    CLOUD_SAVE_PENDING = true;
-    return;
-  }
   clearTimeout(CLOUD_SAVE_TIMER);
   CLOUD_SAVE_TIMER = setTimeout(saveCloudStateNow, 600);
 }
@@ -1569,7 +1577,6 @@ async function initCloudStorage(){
     CLOUD_READY = false;
     CLOUD_REMOTE_LOADED = false;
     CLOUD_LAST_SYNC = "";
-    CLOUD_LAST_UPDATED_AT = "";
     console.info("Offline snapshot loaded", EMBEDDED_OFFLINE_SNAPSHOT.createdAt || "");
     return;
   }
@@ -2875,6 +2882,7 @@ function login(){
     $("roleText").classList.add("hidden");
   }
   buildTabs();
+  if($("onlineBackupBtn")) $("onlineBackupBtn").classList.toggle("hidden", currentRole !== "supervisor");
   if(currentRole === "teamleader"){
     $("pLeader").value = currentUser;
     $("pLeader").readOnly = true;
@@ -2971,6 +2979,7 @@ function buildTabs(){
     btn.classList.add("active");
     document.querySelectorAll(".tab-section").forEach(s=>s.classList.add("hidden"));
     $(btn.dataset.tab).classList.remove("hidden");
+    if(btn.dataset.tab === "settingsTab") renderOnlineBackups();
     renderAll();
   });
 }
@@ -3729,20 +3738,20 @@ function renderDailyFollowFilters(){
 }
 
 function countDaysInclusive(dateFrom, dateTo){
-  const startDate = new Date(dateFrom + "T00:00:00");
-  const endDate = new Date(dateTo + "T00:00:00");
+  const startDate = new Date(dateFrom + "T00:00:00Z");
+  const endDate = new Date(dateTo + "T00:00:00Z");
   if(isNaN(startDate) || isNaN(endDate)) return 0;
   return Math.floor((endDate - startDate) / 86400000) + 1;
 }
 
 function getDatesInRange(dateFrom, dateTo){
   const dates = [];
-  const current = new Date(dateFrom + "T00:00:00");
-  const end = new Date(dateTo + "T00:00:00");
+  const current = new Date(dateFrom + "T00:00:00Z");
+  const end = new Date(dateTo + "T00:00:00Z");
 
   while(current <= end){
     dates.push(current.toISOString().slice(0,10));
-    current.setDate(current.getDate() + 1);
+    current.setUTCDate(current.getUTCDate() + 1);
   }
 
   return dates;
@@ -4205,7 +4214,9 @@ if($("allMonthFilter")) $("allMonthFilter").addEventListener("input", applyAllMo
   if($(id)) $(id).addEventListener("input", renderAllTables);
 });
 if($("resetAllFiltersBtn")) $("resetAllFiltersBtn").addEventListener("click", resetAllFilters);
-if($("offlineDownloadBtn")) $("offlineDownloadBtn").addEventListener("click", downloadOfflineSnapshot);
+if($("onlineBackupBtn")) $("onlineBackupBtn").addEventListener("click", () => createOnlineBackup());
+if($("createOnlineBackupBtn")) $("createOnlineBackupBtn").addEventListener("click", () => createOnlineBackup());
+if($("refreshOnlineBackupsBtn")) $("refreshOnlineBackupsBtn").addEventListener("click", renderOnlineBackups);
 if($("backupBtn")) $("backupBtn").addEventListener("click", exportBackup);
 if($("restoreFile")) $("restoreFile").addEventListener("change", restoreBackupFromFile);
 

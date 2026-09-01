@@ -3,7 +3,8 @@
 <html lang="ar" dir="rtl"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>KPI Dashboard - Delivery Team V55.16.4</title>
+  <title>KPI Dashboard - Delivery Team V55.16.7</title>
+  <!-- V55.16.7: Team Leader transfer updates current branch labels while preparer rosters stay with their physical branches -->
   <link rel="manifest" href="/manifest.json">
   <meta name="theme-color" content="#c2185b">
   <link rel="apple-touch-icon" href="/apple-touch-icon.png">
@@ -325,8 +326,7 @@
           <div><label>التاريخ</label><input type="date" id="pDate" required=""></div>
           <div>
             <label>اسم التيم ليدر</label>
-            <input id="pLeader" list="leadersListP" placeholder="اسم التيم ليدر" required="">
-            <datalist id="leadersListP"><option value="تيم ليدر عباس">ابراهيم اكرم</option><option value="تيم ليدر تريومف">سمير محمد</option><option value="تيم ليدر التجمع الاول">كريم فؤاد</option><option value="تيم ليدر المعادي">فهمي عبد الفتاح</option><option value="تيم ليدر التجمع الخامس">محمد ابراهيم</option></datalist>
+            <select id="pLeader" required=""><option value="">اختر التيم ليدر</option></select>
           </div>
           <div>
             <label>اسم المحضر</label>
@@ -422,8 +422,7 @@
           <div><label>اسم السوبر فايزر</label><input id="lSupervisor" placeholder="اسم السوبر فايزر" required=""></div>
           <div>
             <label>اسم التيم ليدر</label>
-            <input id="lName" list="leadersListL" placeholder="اسم التيم ليدر" required="">
-            <datalist id="leadersListL"><option value="تيم ليدر عباس">ابراهيم اكرم</option><option value="تيم ليدر تريومف">سمير محمد</option><option value="تيم ليدر التجمع الاول">كريم فؤاد</option><option value="تيم ليدر المعادي">فهمي عبد الفتاح</option><option value="تيم ليدر التجمع الخامس">محمد ابراهيم</option></datalist>
+            <select id="lName" required=""><option value="">اختر التيم ليدر</option></select>
           </div>
         </div>
 
@@ -1660,19 +1659,59 @@ function saveLeaderInternalNames(){
 }
 
 function getBranchFromLeader(leaderName){
-  return BRANCH_BY_LEADER[leaderName] || "";
+  return safeSingleBranch(BRANCH_BY_LEADER[leaderName] || "");
 }
 
-function getCurrentLeaderForPreparer(preparerName){
-  for(const [leader, names] of Object.entries(preparerNames || {})){
-    if((names || []).includes(preparerName)) return leader;
+// قوائم المحضرين مرتبطة بالفرع نفسه، وليس بالشخص الذي يشغل منصب التيم ليدر.
+// ده يمنع انتقال المحضرين تلقائيًا عند نقل/تبديل التيم ليدر بين الفروع.
+const BRANCH_ROSTER_PREFIX = "__branch_roster__:";
+function branchRosterKey(branch){
+  const b = safeSingleBranch(branch);
+  return b ? `${BRANCH_ROSTER_PREFIX}${b}` : "";
+}
+function legacyBranchRosterKey(branch){
+  const b = safeSingleBranch(branch);
+  return b ? `تيم ليدر ${b}` : "";
+}
+function knownRosterBranches(){
+  const branches = new Set(Object.values(BRANCH_BY_LEADER || {}).map(safeSingleBranch).filter(Boolean));
+  Object.keys(preparerNames || {}).forEach(key => {
+    if(key.startsWith(BRANCH_ROSTER_PREFIX)) branches.add(safeSingleBranch(key.slice(BRANCH_ROSTER_PREFIX.length)));
+    else if(/^تيم ليدر\s+/.test(key)) branches.add(safeSingleBranch(key.replace(/^تيم ليدر\s+/, "")));
+  });
+  return [...branches].filter(Boolean);
+}
+function ensureBranchRoster(branch){
+  const b = safeSingleBranch(branch);
+  if(!b) return "";
+  const key = branchRosterKey(b);
+  if(!Array.isArray(preparerNames[key])){
+    const legacyKey = legacyBranchRosterKey(b);
+    // أول مرة فقط: انسخ القائمة القديمة الخاصة باسم الفرع، ثم افصلها عن هوية الشخص.
+    preparerNames[key] = Array.isArray(preparerNames[legacyKey]) ? [...preparerNames[legacyKey]] : [];
+  }
+  return key;
+}
+function getPreparerRosterForBranch(branch){
+  const key = ensureBranchRoster(branch);
+  return key ? (preparerNames[key] || []) : [];
+}
+function getPreparerRosterForLeader(leaderName){
+  return getPreparerRosterForBranch(getBranchFromLeader(leaderName));
+}
+function getCurrentLeaderByBranch(branch){
+  const b = safeSingleBranch(branch);
+  return getTeamLeaders().find(leader => getBranchFromLeader(leader) === b) || "";
+}
+function getCurrentBranchForPreparer(preparerName){
+  for(const branch of knownRosterBranches()){
+    if(getPreparerRosterForBranch(branch).includes(preparerName)) return branch;
   }
   return "";
 }
-
-function getCurrentBranchForPreparer(preparerName){
-  const leader = getCurrentLeaderForPreparer(preparerName);
-  return leader ? getBranchFromLeader(leader) : "";
+function getCurrentLeaderForPreparer(preparerName){
+  const branch = getCurrentBranchForPreparer(preparerName);
+  return branch ? getCurrentLeaderByBranch(branch) : "";
 }
 
 function displayBranchForRanking(row, mode){
@@ -2068,6 +2107,20 @@ function leaderDisplayName(leaderName, branchContext=""){
 function displayLeaderNameForTables(leaderName){
   return leaderDisplayName(leaderName || "");
 }
+
+// يعرض اسم التيم ليدر بالفرع الحالي بدل اسم اليوزر القديم المرتبط بفرع سابق.
+// قيمة الـ option تظل هي مفتاح اليوزر الأصلي حتى لا تتأثر التقييمات أو الصلاحيات أو تسجيل الدخول.
+function currentLeaderRoleLabel(leaderName){
+  const branch = safeSingleBranch(getBranchFromLeader(leaderName));
+  return branch ? `تيم ليدر ${branch}` : String(leaderName || "").trim();
+}
+
+function currentLeaderOptionLabel(leaderName){
+  const branch = safeSingleBranch(getBranchFromLeader(leaderName));
+  const display = leaderDisplayName(leaderName, branch);
+  const roleLabel = currentLeaderRoleLabel(leaderName);
+  return display && display !== roleLabel ? `${roleLabel} - ${display}` : (display || roleLabel);
+}
 let currentRole = "";
 let editMode = null;
 let editRecordId = null;
@@ -2174,7 +2227,7 @@ function updateSelects(){
 
 function updatePreparerNameOptions(){
   const leader = $("pLeader").value.trim();
-  const names = preparerNames[leader] || [];
+  const names = getPreparerRosterForLeader(leader);
   const old = $("pName").value;
   $("pName").innerHTML = `<option value="">اختر المحضر</option>` + names.map(n => `<option value="${esc(n)}">${esc(n)}</option>`).join("");
   if(names.includes(old)) $("pName").value = old;
@@ -2187,7 +2240,7 @@ function renderPreparerNamesList(){
     leader = currentUser;
     $("manageLeader").value = currentUser;
   }
-  const names = preparerNames[leader] || [];
+  const names = getPreparerRosterForLeader(leader);
   const rows = names.map((name, i) => `
     <tr>
       <td>${i+1}</td>
@@ -2201,11 +2254,11 @@ function renderPreparerNamesList(){
 function renderSettingsPreparersList(){
   if(!$("settingsPreparersList")) return;
   const leader = $("settingsLeader").value;
-  const names = preparerNames[leader] || [];
+  const names = getPreparerRosterForLeader(leader);
   const rows = names.map((name, i) => `
     <tr>
       <td>${i+1}</td>
-      <td>${esc(leader)}</td>
+      <td>${esc(currentLeaderRoleLabel(leader))}</td>
       <td>${esc(name)}</td>
       <td><button class="btn red" style="padding:7px 10px;font-size:12px" type="button" onclick="deletePreparerNameFromSettings('${esc(leader)}','${esc(name)}')">حذف</button></td>
     </tr>
@@ -2217,25 +2270,27 @@ function addPreparerNameFromSettings(){
   const leader = $("settingsLeader").value;
   const name = $("settingsPreparerName").value.trim();
   if(!name){ alert("اكتب اسم المحضر"); return; }
-  preparerNames[leader] ||= [];
-  if(preparerNames[leader].includes(name)){
-    alert("الاسم موجود بالفعل لهذا التيم ليدر");
+  const rosterKey = ensureBranchRoster(getBranchFromLeader(leader));
+  preparerNames[rosterKey] ||= [];
+  if(preparerNames[rosterKey].includes(name)){
+    alert("الاسم موجود بالفعل في هذا الفرع");
     return;
   }
-  preparerNames[leader].push(name);
-  preparerNames[leader].sort();
+  preparerNames[rosterKey].push(name);
+  preparerNames[rosterKey].sort();
   $("settingsPreparerName").value = "";
   save();
-  addActivity("إضافة محضر", `تم إضافة المحضر ${name} إلى ${leader}`);
+  addActivity("إضافة محضر", `تم إضافة المحضر ${name} إلى فرع ${getBranchFromLeader(leader)}`);
   updatePreparerNameOptions();
   renderSettingsPreparersList();
 }
 
 function deletePreparerNameFromSettings(leader, name){
-  if(!confirm("حذف اسم المحضر من قائمة هذا التيم ليدر؟")) return;
-  preparerNames[leader] = (preparerNames[leader] || []).filter(n => n !== name);
+  if(!confirm("حذف اسم المحضر من قائمة هذا الفرع؟")) return;
+  const rosterKey = ensureBranchRoster(getBranchFromLeader(leader));
+  preparerNames[rosterKey] = (preparerNames[rosterKey] || []).filter(n => n !== name);
   save();
-  addActivity("حذف محضر", `تم حذف المحضر ${name} من ${leader}`);
+  addActivity("حذف محضر", `تم حذف المحضر ${name} من فرع ${getBranchFromLeader(leader)}`);
   updatePreparerNameOptions();
   renderSettingsPreparersList();
 }
@@ -2248,7 +2303,8 @@ function renderPasswordUsers(){
     const role = USERS[u].role === "teamleader" ? "تيم ليدر" :
                  USERS[u].role === "supervisor" ? "سوبر فايزر" :
                  USERS[u].role === "admin" ? "سوبر فايزر" : "View";
-    return `<option value="${esc(u)}">${esc(u)} - ${role}</option>`;
+    const shownUser = USERS[u].role === "teamleader" ? currentLeaderRoleLabel(u) : u;
+    return `<option value="${esc(u)}">${esc(shownUser)} - ${role}</option>`;
   }).join("");
   if(names.includes(old)) $("passwordUser").value = old;
 }
@@ -2388,8 +2444,8 @@ function renderLoginUsersManagement(){
       : (protectNote ? `<span class="badge excellent">${protectNote}</span>` : `<span class="badge good">نشط</span>`);
     return `<tr>
       <td>${i+1}</td>
-      <td>${esc(u)}</td>
-      <td>${esc(display)}</td>
+      <td>${esc(role === 'teamleader' ? currentLeaderRoleLabel(u) : u)}</td>
+      <td>${esc(role === 'teamleader' ? leaderDisplayName(u, branch) : display)}</td>
       <td>${esc(roleLabel(role))}</td>
       <td>${esc(branch)}</td>
       <td>${permissionCell}</td>
@@ -2476,31 +2532,28 @@ function deleteLoginUser(user){
 
 function renderTeamLeaderControls(){
   const leaders = getTeamLeaders();
-  const optionHtml = leaders.map(n => `<option value="${esc(n)}">${esc(leaderDisplayName(n))} - ${esc(n)}</option>`).join("");
-  const datalistHtml = leaders.map(n => `<option value="${esc(n)}">${esc(leaderDisplayName(n))}</option>`).join("");
+  const optionHtml = leaders.map(n => `<option value="${esc(n)}">${esc(currentLeaderOptionLabel(n))}</option>`).join("");
 
-  if($("manageLeader")){
-    const old = $("manageLeader").value;
-    $("manageLeader").innerHTML = optionHtml;
-    if(leaders.includes(old)) $("manageLeader").value = old;
-    if(currentRole === "teamleader") $("manageLeader").value = currentUser;
+  ["pLeader","lName","manageLeader","settingsLeader"].forEach(id => {
+    const el = $(id);
+    if(!el) return;
+    const old = el.value;
+    const prefix = (id === "pLeader" || id === "lName") ? `<option value="">اختر التيم ليدر</option>` : "";
+    el.innerHTML = prefix + optionHtml;
+    if(leaders.includes(old)) el.value = old;
+  });
+
+  if(currentRole === "teamleader"){
+    if($("pLeader")) $("pLeader").value = currentUser;
+    if($("manageLeader")) $("manageLeader").value = currentUser;
   }
-
-  if($("settingsLeader")){
-    const old = $("settingsLeader").value;
-    $("settingsLeader").innerHTML = optionHtml;
-    if(leaders.includes(old)) $("settingsLeader").value = old;
-  }
-
-  if($("leadersListP")) $("leadersListP").innerHTML = datalistHtml;
-  if($("leadersListL")) $("leadersListL").innerHTML = datalistHtml;
 }
 
 function renderTransferControls(){
   if(!$("transferPreparerFromLeader")) return;
 
   const leaders = getTeamLeaders();
-  const optionHtml = leaders.map(n => `<option value="${esc(n)}">${esc(leaderDisplayName(n))} - ${esc(n)}</option>`).join("");
+  const optionHtml = leaders.map(n => `<option value="${esc(n)}">${esc(currentLeaderOptionLabel(n))}</option>`).join("");
 
   const controls = ["transferPreparerFromLeader","transferPreparerToLeader","transferLeaderName"];
   controls.forEach(id => {
@@ -2523,7 +2576,7 @@ function renderInternalLeaderControls(){
   $('internalLeaderUser').innerHTML = ids.map(name => {
     const real = LEADER_INTERNAL_NAMES[name] || '';
     const branch = safeSingleBranch(getBranchFromLeader(name) || (leaders.find(r=>r.name===name)?.branch || ''));
-    const label = `${name}${branch ? ' | ' + branch : ''}${real ? ' ← ' + real : ''}`;
+    const label = `${currentLeaderRoleLabel(name)}${branch ? ' | ' + branch : ''}${real ? ' ← ' + real : ''}`;
     return `<option value="${esc(name)}">${esc(label)}</option>`;
   }).join('');
 
@@ -2537,13 +2590,13 @@ function renderInternalLeaderControls(){
     const saved = LEADER_INTERNAL_NAMES[name] || '-';
     return `<tr>
       <td>${i+1}</td>
-      <td>${esc(name)}</td>
+      <td>${esc(currentLeaderRoleLabel(name))}</td>
       <td>${esc(branch || '-')}</td>
       <td>${esc(saved)}</td>
     </tr>`;
   });
 
-  $('internalLeaderNamesTable').innerHTML = table(['#','الاسم/اليوزر المحفوظ','الفرع الحالي/آخر فرع','الاسم الحقيقي داخل التقارير'], rows);
+  $('internalLeaderNamesTable').innerHTML = table(['#','اسم/يوزر التيم ليدر الحالي','الفرع الحالي','الاسم الحقيقي داخل التقارير'], rows);
 }
 
 function saveInternalLeaderName(){
@@ -2576,7 +2629,7 @@ function renderTransferPreparerNames(){
   if(!$("transferPreparerName")) return;
 
   const fromLeader = $("transferPreparerFromLeader").value;
-  const names = (preparerNames[fromLeader] || []).slice().sort();
+  const names = getPreparerRosterForLeader(fromLeader).slice().sort();
   const old = $("transferPreparerName").value;
 
   $("transferPreparerName").innerHTML =
@@ -2614,30 +2667,31 @@ function transferPreparer(){
     return;
   }
 
-  if(fromLeader === toLeader){
-    alert('لا يمكن النقل لنفس التيم ليدر');
-    return;
-  }
-
-  if(!(preparerNames[fromLeader] || []).includes(prepName)){
-    alert('المحضر غير موجود تحت التيم ليدر المختار');
-    return;
-  }
-
   const oldBranch = getBranchFromLeader(fromLeader) || '-';
   const newBranch = getBranchFromLeader(toLeader) || '-';
-
-  if(!confirm(`هل تريد نقل ${prepName} من ${leaderDisplayName(fromLeader)} - ${oldBranch} إلى ${leaderDisplayName(toLeader)} - ${newBranch}?
-
-سيتم تغيير الفرع الحالي فقط. كل تقييمات الموظف السابقة والجديدة ستظل محفوظة معه كما هي، ولن تتأثر بعملية النقل.`)){
+  if(oldBranch === newBranch){
+    alert('لا يمكن النقل لنفس الفرع');
     return;
   }
 
-  preparerNames[fromLeader] = (preparerNames[fromLeader] || []).filter(n => n !== prepName);
-  preparerNames[toLeader] ||= [];
-  if(!preparerNames[toLeader].includes(prepName)){
-    preparerNames[toLeader].push(prepName);
-    preparerNames[toLeader].sort();
+  const fromRosterKey = ensureBranchRoster(oldBranch);
+  const toRosterKey = ensureBranchRoster(newBranch);
+  if(!(preparerNames[fromRosterKey] || []).includes(prepName)){
+    alert('المحضر غير موجود في الفرع المختار');
+    return;
+  }
+
+  if(!confirm(`هل تريد نقل ${prepName} من ${oldBranch} إلى ${newBranch}؟
+
+سيتم نقل المحضر فقط بين الفرعين. تقييماته القديمة ستظل محفوظة كما هي.`)){
+    return;
+  }
+
+  preparerNames[fromRosterKey] = (preparerNames[fromRosterKey] || []).filter(n => n !== prepName);
+  preparerNames[toRosterKey] ||= [];
+  if(!preparerNames[toRosterKey].includes(prepName)){
+    preparerNames[toRosterKey].push(prepName);
+    preparerNames[toRosterKey].sort();
   }
 
   transferLog.unshift({
@@ -2645,14 +2699,14 @@ function transferPreparer(){
     dateTime: new Date().toLocaleString('ar-EG'),
     type: 'محضر',
     name: prepName,
-    from: `${leaderDisplayName(fromLeader)} / ${oldBranch}`,
-    to: `${leaderDisplayName(toLeader)} / ${newBranch}`,
+    from: oldBranch,
+    to: newBranch,
     by: currentUser || 'سوبر فايزر'
   });
   transferLog = transferLog.slice(0, 1000);
 
   save();
-  addActivity('نقل محضر', `تم نقل ${prepName} من ${fromLeader} إلى ${toLeader} بدون تغيير التقييمات القديمة`);
+  addActivity('نقل محضر', `تم نقل ${prepName} من ${oldBranch} إلى ${newBranch} بدون تغيير التقييمات القديمة`);
   renderTeamLeaderControls();
   renderTransferControls();
   renderTransferLog();
@@ -2660,61 +2714,86 @@ function transferPreparer(){
   renderSettingsPreparersList();
   renderAll();
 
-  alert('تم نقل المحضر بنجاح. التقييمات السابقة والجديدة محفوظة مع الموظف وتكمل على بعضها.');
+  alert('تم نقل المحضر بنجاح. التقييمات القديمة محفوظة كما هي.');
 }
 
 function transferLeader(){
   const leader = $('transferLeaderName').value;
-  const newBranch = $('transferLeaderNewBranch').value.trim();
+  const newBranch = safeSingleBranch($('transferLeaderNewBranch').value.trim());
 
   if(!leader){
     alert('اختار اسم التيم ليدر');
     return;
   }
-
   if(!newBranch){
     alert('اكتب اسم الفرع الجديد');
     return;
   }
 
   const oldBranch = getBranchFromLeader(leader) || '-';
-
   if(oldBranch === newBranch){
     alert('التيم ليدر موجود بالفعل على نفس الفرع');
     return;
   }
 
-  if(!confirm(`هل تريد نقل ${leaderDisplayName(leader)} من ${oldBranch} إلى ${newBranch}?
+  const realName = leaderDisplayName(leader, oldBranch) || leader;
+  const destinationLeader = getTeamLeaders().find(u => u !== leader && getBranchFromLeader(u) === newBranch) || '';
+  const destinationRealName = destinationLeader ? (leaderDisplayName(destinationLeader, newBranch) || destinationLeader) : '';
 
-سيتم تغيير الفرع الحالي فقط. كل تقييمات التيم ليدر السابقة والجديدة ستظل محفوظة معه كما هي، ولن تتأثر بعملية النقل. المحضرين لن يتم نقلهم تلقائيًا.`)){
-    return;
+  let confirmText = `هل تريد نقل ${realName} من ${oldBranch} إلى ${newBranch}؟
+
+`;
+  if(destinationLeader){
+    confirmText += `الفرع الجديد عليه ${destinationRealName} حاليًا، لذلك سيتم تبديل التيم ليدرين بين الفرعين:
+` +
+      `• ${realName} → ${newBranch}
+• ${destinationRealName} → ${oldBranch}
+
+`;
   }
+  confirmText += 'قوائم المحضرين ستظل في فروعها الحالية ولن تنتقل مع أي تيم ليدر. التقييمات القديمة لن تتغير.';
+  if(!confirm(confirmText)) return;
 
   unhideBranch(newBranch);
+
+  // هوية الشخص تظل ثابتة داخليًا لحماية التقييمات القديمة وكلمة السر والصلاحيات.
+  // الذي يتغير هو الفرع الحالي والاسم الوظيفي الظاهر للمستخدم.
   BRANCH_BY_LEADER[leader] = newBranch;
+  if(destinationLeader) BRANCH_BY_LEADER[destinationLeader] = oldBranch;
 
   transferLog.unshift({
     id: Date.now() + Math.random(),
     dateTime: new Date().toLocaleString('ar-EG'),
-    type: 'تيم ليدر',
-    name: leaderDisplayName(leader),
-    from: oldBranch,
-    to: newBranch,
+    type: destinationLeader ? 'تبديل تيم ليدر' : 'نقل تيم ليدر',
+    name: destinationLeader ? `${realName} ↔ ${destinationRealName}` : realName,
+    from: destinationLeader ? `${realName}: ${oldBranch} | ${destinationRealName}: ${newBranch}` : oldBranch,
+    to: destinationLeader ? `${realName}: ${newBranch} | ${destinationRealName}: ${oldBranch}` : newBranch,
     by: currentUser || 'سوبر فايزر'
   });
   transferLog = transferLog.slice(0, 1000);
 
   saveBranches();
   save();
-  addActivity('نقل تيم ليدر', `تم نقل ${leader} من ${oldBranch} إلى ${newBranch} بدون تغيير التقييمات القديمة`);
+  addActivity('نقل تيم ليدر', destinationLeader
+    ? `تم تبديل ${realName} و ${destinationRealName} بين ${oldBranch} و ${newBranch} بدون نقل المحضرين أو تغيير التقييمات القديمة`
+    : `تم نقل ${realName} من ${oldBranch} إلى ${newBranch} بدون نقل المحضرين أو تغيير التقييمات القديمة`);
 
   $('transferLeaderNewBranch').value = '';
   renderTeamLeaderControls();
+  renderInternalLeaderControls();
   renderTransferControls();
   renderTransferLog();
+  renderPasswordUsers();
+  renderLoginUsers();
+  renderLoginUsersManagement();
+  renderBranchesManagement();
+  renderSettingsPreparersList();
+  updatePreparerNameOptions();
   renderAll();
 
-  alert('تم نقل التيم ليدر بنجاح. التقييمات السابقة والجديدة محفوظة معه وتكمل على بعضها.');
+  alert(destinationLeader
+    ? `تم التبديل بنجاح. ${realName} أصبح تيم ليدر ${newBranch}، و${destinationRealName} أصبح تيم ليدر ${oldBranch}. المحضرون لم يتحركوا.`
+    : `تم نقل ${realName} بنجاح إلى ${newBranch}. المحضرون لم يتحركوا.`);
 }
 
 
@@ -2733,7 +2812,7 @@ function addTeamLeader(){
   USERS[name] = {pass: pass, role: "teamleader", display: name, tlPermission: "evaluator", tlCanViewDashboard: true, tlCanEvaluatePreparers: true, tlCanEvaluateLeaders: false, tlViewScope: "own"};
   unhideBranch(branch);
   BRANCH_BY_LEADER[name] = branch;
-  preparerNames[name] = preparerNames[name] || [];
+  ensureBranchRoster(branch);
 
   saveUsers();
   saveBranches();
@@ -2789,16 +2868,17 @@ function addPreparerName(){
   const leader = currentRole === "teamleader" ? currentUser : $("manageLeader").value;
   const name = $("newPreparerName").value.trim();
   if(!name){ alert("اكتب اسم المحضر"); return; }
-  preparerNames[leader] ||= [];
-  if(preparerNames[leader].includes(name)){
-    alert("الاسم موجود بالفعل");
+  const rosterKey = ensureBranchRoster(getBranchFromLeader(leader));
+  preparerNames[rosterKey] ||= [];
+  if(preparerNames[rosterKey].includes(name)){
+    alert("الاسم موجود بالفعل في هذا الفرع");
     return;
   }
-  preparerNames[leader].push(name);
-  preparerNames[leader].sort();
+  preparerNames[rosterKey].push(name);
+  preparerNames[rosterKey].sort();
   $("newPreparerName").value = "";
   save();
-  addActivity("إضافة محضر", `تم إضافة المحضر ${name} إلى ${leader}`);
+  addActivity("إضافة محضر", `تم إضافة المحضر ${name} إلى فرع ${getBranchFromLeader(leader)}`);
   updatePreparerNameOptions();
   renderPreparerNamesList();
 }
@@ -2808,10 +2888,11 @@ function deletePreparerName(leader, name){
     alert("غير مسموح بحذف أسماء من يوزر آخر");
     return;
   }
-  if(!confirm("حذف اسم المحضر من القائمة؟")) return;
-  preparerNames[leader] = (preparerNames[leader] || []).filter(n => n !== name);
+  if(!confirm("حذف اسم المحضر من قائمة هذا الفرع؟")) return;
+  const rosterKey = ensureBranchRoster(getBranchFromLeader(leader));
+  preparerNames[rosterKey] = (preparerNames[rosterKey] || []).filter(n => n !== name);
   save();
-  addActivity("حذف محضر", `تم حذف المحضر ${name} من ${leader}`);
+  addActivity("حذف محضر", `تم حذف المحضر ${name} من فرع ${getBranchFromLeader(leader)}`);
   updatePreparerNameOptions();
   renderPreparerNamesList();
 }
@@ -2862,7 +2943,10 @@ function renderLoginUsers(){
     const old = $("loginUserSelect").value;
     $("loginUserSelect").innerHTML =
       `<option value="">اختر اسم المستخدم</option>` +
-      allUsers.map(u => `<option value="${esc(u)}">${esc(u)}</option>`).join("");
+      allUsers.map(u => {
+        const label = USERS[u] && USERS[u].role === "teamleader" ? currentLeaderRoleLabel(u) : u;
+        return `<option value="${esc(u)}">${esc(label)}</option>`;
+      }).join("");
     if(allUsers.includes(old)) $("loginUserSelect").value = old;
   }
 }
@@ -2873,7 +2957,7 @@ function login(){
     alert("اسم المستخدم أو كلمة المرور غير صحيحة");
     return;
   }
-  currentUser = USERS[u].display || u;
+  currentUser = u;
   currentRole = USERS[u].role;
   $("loginScreen").classList.add("hidden");
   $("app").classList.remove("hidden");
@@ -2885,7 +2969,7 @@ function login(){
   if($("onlineBackupBtn")) $("onlineBackupBtn").classList.toggle("hidden", currentRole !== "supervisor");
   if(currentRole === "teamleader"){
     $("pLeader").value = currentUser;
-    $("pLeader").readOnly = true;
+    $("pLeader").disabled = true;
     $("manageLeader").value = currentUser;
     $("manageLeader").disabled = true;
     if(canTeamLeaderViewAllBranches(currentUser)){
@@ -2896,7 +2980,7 @@ function login(){
       $("teamLeaderViewNote").classList.remove("hidden");
     }
   } else {
-    $("pLeader").readOnly = false;
+    $("pLeader").disabled = false;
     $("manageLeader").disabled = false;
     $("viewFiltersBox").classList.remove("hidden");
     $("teamLeaderViewNote").classList.add("hidden");
@@ -3208,7 +3292,7 @@ function commitmentInfo(month, branch, type, pData, lData){
   const tls = scopedTeamLeaders(branch);
   let expectedPreparers = 0;
   tls.forEach(leader => {
-    expectedPreparers += ((preparerNames[leader] || []).length * days);
+    expectedPreparers += (getPreparerRosterForLeader(leader).length * days);
   });
   let expectedLeaders = tls.length * days;
   let actualPreparers = uniqueEvalCount(pData, r => `${r.date}|${r.leader}|${r.name}`);
@@ -3260,7 +3344,7 @@ function missingIndicatorRows(month, selectedBranch, type, pData, lData){
   return branches.map((branch, i) => {
     const tls = scopedTeamLeaders(branch);
     let expectedPreparers = 0;
-    tls.forEach(leader => expectedPreparers += ((preparerNames[leader] || []).length * days));
+    tls.forEach(leader => expectedPreparers += (getPreparerRosterForLeader(leader).length * days));
     let expectedLeaders = tls.length * days;
     let actualPreparers = uniqueEvalCount(pData.filter(r=>r.branch===branch), r => `${r.date}|${r.leader}|${r.name}`);
     let actualLeaders = uniqueEvalCount(lData.filter(r=>r.branch===branch), r => `${r.date}|${r.name}`);
@@ -3329,7 +3413,7 @@ function executiveMissingData(month, selectedBranch, type, pData, lData){
   return branches.map((branch) => {
     const tls = scopedTeamLeaders(branch);
     let expectedPreparers = 0;
-    tls.forEach(leader => expectedPreparers += ((preparerNames[leader] || []).length * days));
+    tls.forEach(leader => expectedPreparers += (getPreparerRosterForLeader(leader).length * days));
     let expectedLeaders = tls.length * days;
     let actualPreparers = uniqueEvalCount(pData.filter(r=>r.branch===branch), r => `${r.date}|${r.leader}|${r.name}`);
     let actualLeaders = uniqueEvalCount(lData.filter(r=>r.branch===branch), r => `${r.date}|${r.name}`);
@@ -3784,7 +3868,7 @@ function renderDailyFollow(){
 
   teamLeaders.forEach((leader) => {
     const branch = getBranchFromLeader(leader);
-    const assignedPreparers = (preparerNames[leader] || []).slice().sort();
+    const assignedPreparers = getPreparerRosterForLeader(leader).slice().sort();
 
     if(assignedPreparers.length === 0){
       rows.push(`
@@ -4239,6 +4323,7 @@ async function startApp(){
     const btn = $("offlineDownloadBtn");
     if(btn){ btn.textContent = "نسخة Offline"; btn.disabled = true; }
   }
+  knownRosterBranches().forEach(branch => ensureBranchRoster(branch));
   renderLoginUsers();
   renderTeamLeaderControls();
   renderInternalLeaderControls();

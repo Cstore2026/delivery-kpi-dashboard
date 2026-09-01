@@ -1,4 +1,4 @@
-const CACHE_NAME = "delivery-kpi-v55-16-4";
+const CACHE_NAME = "delivery-kpi-v55-16-7";
 const STATIC_ASSETS = [
   "/manifest.json",
   "/apple-touch-icon.png",

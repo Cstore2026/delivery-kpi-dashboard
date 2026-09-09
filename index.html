@@ -2181,8 +2181,8 @@ function save(){
   localStorage.setItem("kpi_preparers_v3",JSON.stringify(preparers));
   localStorage.setItem("kpi_leaders_v3",JSON.stringify(leaders));
   localStorage.setItem("kpi_preparer_names_v1",JSON.stringify(preparerNames));
-  localStorage.setItem("kpi_activity_log_v1",JSON.stringify(activityLog));
-  localStorage.setItem("kpi_transfer_log_v1",JSON.stringify(transferLog));
+activityLog = Array.isArray(activityLog) ? activityLog.slice(0, 500) : [];
+localStorage.setItem("kpi_activity_log_v1", JSON.stringify(activityLog));  localStorage.setItem("kpi_transfer_log_v1",JSON.stringify(transferLog));
   scheduleCloudSave();
 }
 
@@ -2195,7 +2195,7 @@ function addActivity(action, details){
     action,
     details
   });
-  activityLog = activityLog.slice(0, 1000);
+  activityLog = activityLog.slice(0, 500);
   localStorage.setItem("kpi_activity_log_v1", JSON.stringify(activityLog));
   scheduleCloudSave();
 }

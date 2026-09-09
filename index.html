@@ -2238,11 +2238,24 @@ function table(headers, rows){
 }
 function percent(total,max){return Math.round((total/max)*100)}
 function unique(list,key){return [...new Set(list.map(x=>x[key]).filter(Boolean))].sort()}
-function fillSelect(id, values, first="الكل"){
-  const el=$(id), old=el.value;
-  el.innerHTML=`<option value="">${first}</option>`+values.map(v=>`<option value="${esc(v)}">${esc(v)}</option>`).join("");
-  if(values.includes(old))el.value=old;
-}
+function fillSelect(id, values, first="كل"){
+  const el = $(id);
+
+  // لو الـ select مش موجود في الصفحة، نتخطاه بدون ما نوقف البرنامج
+  if(!el) return;
+
+  const old = el.value;
+
+  el.innerHTML =
+    `<option value="">${first}</option>` +
+    values.map(v =>
+      `<option value="${escapeHtml(v)}">${escapeHtml(v)}</option>`
+    ).join("");
+
+  if(values.includes(old)){
+    el.value = old;
+  }
+}}
 function allBranches(){
   const hidden = new Set(HIDDEN_BRANCHES || []);
   return [...new Set([...Object.values(BRANCH_BY_LEADER),...preparers.map(x=>x.branch),...leaders.map(x=>x.branch)].filter(Boolean))]

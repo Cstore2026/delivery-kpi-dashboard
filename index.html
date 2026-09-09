@@ -1484,14 +1484,48 @@ async function downloadOfflineSnapshot(){
 }
 function applyCloudState(state){
   if(!state || typeof state !== "object") return false;
+
   CLOUD_STORAGE_KEYS.forEach(k => {
-    if(Object.prototype.hasOwnProperty.call(state,k) && state[k] !== null && typeof state[k] !== "undefined"){
-      localStorage.setItem(k, String(state[k]));
+    if(
+      !Object.prototype.hasOwnProperty.call(state,k) ||
+      state[k] === null ||
+      typeof state[k] === "undefined"
+    ) return;
+
+    try{
+      let value = String(state[k]);
+
+      // Activity Log can become too large for browser localStorage.
+      // Keep the latest 500 entries locally so it cannot block the whole app.
+      if(k === "kpi_activity_log_v1"){
+        try{
+          const log = JSON.parse(value || "[]");
+          if(Array.isArray(log)){
+            value = JSON.stringify(log.slice(0, 500));
+          }
+        }catch(_err){}
+      }
+
+      localStorage.setItem(k, value);
+
+    }catch(err){
+      console.warn("Local storage skipped:", k, err);
+
+      // Never allow an oversized activity log to trigger cloud safety lock.
+      if(k === "kpi_activity_log_v1"){
+        try{
+          const log = JSON.parse(String(state[k]) || "[]");
+          localStorage.setItem(
+            k,
+            JSON.stringify(Array.isArray(log) ? log.slice(0, 100) : [])
+          );
+        }catch(_err){}
+      }
     }
   });
+
   return true;
-}
-async function loadCloudState(){
+}async function loadCloudState(){
   try{
     const res = await fetch(`${SUPABASE_URL}/rest/v1/kpi_store?key=eq.${encodeURIComponent(CLOUD_ROW_KEY)}&select=value`, {
       headers: cloudHeaders({"Accept":"application/json"}),

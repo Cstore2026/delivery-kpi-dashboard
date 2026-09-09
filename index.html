@@ -2255,7 +2255,7 @@ function fillSelect(id, values, first="كل"){
   if(values.includes(old)){
     el.value = old;
   }
-}}
+}
 function allBranches(){
   const hidden = new Set(HIDDEN_BRANCHES || []);
   return [...new Set([...Object.values(BRANCH_BY_LEADER),...preparers.map(x=>x.branch),...leaders.map(x=>x.branch)].filter(Boolean))]

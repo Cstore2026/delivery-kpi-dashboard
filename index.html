@@ -4387,10 +4387,13 @@ async function startApp(){
   renderLoginUsersManagement();
   renderBranchesManagement();
   renderCriteriaForms();
-  renderCriteriaSettings();
-  calcPScores(); calcLScores();
+renderCriteriaSettings();
+calcPScores(); calcLScores();
+
+if($("viewMonth")) $("viewMonth").value = monthNow();
+renderView();
 }
-startApp();
+  startApp();
 
 if('serviceWorker' in navigator){
   window.addEventListener('load', () => {

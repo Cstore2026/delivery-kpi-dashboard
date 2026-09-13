@@ -1556,30 +1556,133 @@ function applyCloudState(state){
 async function saveCloudStateNow(){
   // FAIL CLOSED: never write to Supabase unless this page successfully loaded app_state first.
   if(!CLOUD_READY || !CLOUD_REMOTE_LOADED || !CLOUD_LAST_SYNC) return;
-  try{
-const value = JSON.stringify(collectLiveCloudState());
-    if(value === CLOUD_LAST_SYNC) return;
 
-    // Update the existing app_state row only. Never create/replace it after a failed load.
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/kpi_store?key=eq.${encodeURIComponent(CLOUD_ROW_KEY)}`, {
-      method: "PATCH",
-      headers: cloudHeaders({"Prefer":"return=representation"}),
-      body: JSON.stringify({value, updated_at: new Date().toISOString()})
-    });
-    if(!res.ok) throw new Error(await res.text());
-    const updatedRows = await res.json();
-    if(!Array.isArray(updatedRows) || updatedRows.length !== 1){
-      throw new Error("Safety lock: app_state was not updated exactly once");
+  try{
+    const localState = collectLiveCloudState();
+
+    // Merge evaluation records from all devices without deleting existing ones.
+    const mergeEvaluationRecords = (remoteRaw, localRaw) => {
+      let remote = [];
+      let local = [];
+
+      try{
+        remote = JSON.parse(remoteRaw || "[]");
+      }catch(_err){}
+
+      try{
+        local = JSON.parse(localRaw || "[]");
+      }catch(_err){}
+
+      if(!Array.isArray(remote)) remote = [];
+      if(!Array.isArray(local)) local = [];
+
+      const merged = new Map();
+
+      // Existing online records first
+      remote.forEach(r => {
+        if(!r) return;
+
+        const key = r.id != null
+          ? `id:${String(r.id)}`
+          : `eval:${r.date || ""}|${r.leader || ""}|${r.name || ""}`;
+
+        merged.set(key, r);
+      });
+
+      // Current device records override only matching records
+      local.forEach(r => {
+        if(!r) return;
+
+        const key = r.id != null
+          ? `id:${String(r.id)}`
+          : `eval:${r.date || ""}|${r.leader || ""}|${r.name || ""}`;
+
+        merged.set(key, r);
+      });
+
+      return JSON.stringify(Array.from(merged.values()));
+    };
+
+    // Try up to 3 times in case another device saves at the same moment.
+    for(let attempt = 0; attempt < 3; attempt++){
+
+      const getRes = await fetch(
+        `${SUPABASE_URL}/rest/v1/kpi_store?key=eq.${encodeURIComponent(CLOUD_ROW_KEY)}&select=value,updated_at`,
+        {
+          headers: cloudHeaders({"Accept":"application/json"}),
+          cache: "no-store"
+        }
+      );
+
+      if(!getRes.ok) throw new Error(await getRes.text());
+
+      const rows = await getRes.json();
+
+      if(!Array.isArray(rows) || rows.length !== 1 || !rows[0].value){
+        throw new Error("app_state row is missing or invalid");
+      }
+
+      const remoteState = JSON.parse(rows[0].value);
+      const remoteUpdatedAt = rows[0].updated_at;
+
+      // Keep latest online state, then apply this device's live state.
+      const mergedState = {
+        ...remoteState,
+        ...localState
+      };
+
+      // IMPORTANT:
+      // Never overwrite evaluations from another device.
+      mergedState["kpi_preparers_v3"] = mergeEvaluationRecords(
+        remoteState["kpi_preparers_v3"],
+        localState["kpi_preparers_v3"]
+      );
+
+      mergedState["kpi_leaders_v3"] = mergeEvaluationRecords(
+        remoteState["kpi_leaders_v3"],
+        localState["kpi_leaders_v3"]
+      );
+
+      const value = JSON.stringify(mergedState);
+      const now = new Date().toISOString();
+
+      const res = await fetch(
+        `${SUPABASE_URL}/rest/v1/kpi_store?key=eq.${encodeURIComponent(CLOUD_ROW_KEY)}&updated_at=eq.${encodeURIComponent(remoteUpdatedAt)}`,
+        {
+          method: "PATCH",
+          headers: cloudHeaders({"Prefer":"return=representation"}),
+          body: JSON.stringify({
+            value,
+            updated_at: now
+          })
+        }
+      );
+
+      if(!res.ok) throw new Error(await res.text());
+
+      const updatedRows = await res.json();
+
+      // Success: exactly one version was updated.
+      if(Array.isArray(updatedRows) && updatedRows.length === 1){
+        CLOUD_LAST_SYNC = value;
+        return true;
+      }
+
+      // Another device saved first.
+      // Loop again, reload the newest state and merge once more.
     }
-    CLOUD_LAST_SYNC = value;
+
+    throw new Error("Cloud save conflict after 3 attempts");
+
   }catch(err){
     console.warn("Supabase save failed", err);
-    alert("تعذر حفظ البيانات أونلاين. تم إيقاف المزامنة السحابية لهذه الجلسة لحماية الداتا. اعمل Refresh بعد التأكد من الاتصال.");
-    CLOUD_READY = false;
-    CLOUD_REMOTE_LOADED = false;
-    clearTimeout(CLOUD_SAVE_TIMER);
+
+    alert(
+      "تعذر تأكيد حفظ التقييم أونلاين. برجاء التأكد من الاتصال وعدم غلق الصفحة ثم المحاولة مرة أخرى."
+    );
+
+    return false;
   }
-}
 function scheduleCloudSave(){
   if(!CLOUD_READY || !CLOUD_REMOTE_LOADED || !CLOUD_LAST_SYNC) return;
   clearTimeout(CLOUD_SAVE_TIMER);

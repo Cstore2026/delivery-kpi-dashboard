@@ -1682,7 +1682,9 @@ async function saveCloudStateNow(){
     );
 
     return false;
-  }
+}
+}
+
 function scheduleCloudSave(){
   if(!CLOUD_READY || !CLOUD_REMOTE_LOADED || !CLOUD_LAST_SYNC) return;
   clearTimeout(CLOUD_SAVE_TIMER);

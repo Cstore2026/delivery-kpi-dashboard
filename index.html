@@ -3938,13 +3938,12 @@ function renderDailyFollow(){
     }
 
     assignedPreparers.forEach(preparerName => {
-      const recordsForPreparer = preparers.filter(r =>
-        r.date >= dateFrom &&
-        r.date <= dateTo &&
-        r.leader === leader &&
-        r.name === preparerName &&
-        (!selectedBranch || r.branch === selectedBranch)
-      );
+     const recordsForPreparer = preparers.filter(r =>
+  r.date >= dateFrom &&
+  r.date <= dateTo &&
+  r.leader === leader &&
+  r.name === preparerName
+);
 
       const evaluatedDates = [...new Set(recordsForPreparer.map(r => r.date))].sort();
       const missingDates = allDatesInRange.filter(d => !evaluatedDates.includes(d));

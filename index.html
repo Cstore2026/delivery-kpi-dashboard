@@ -2178,11 +2178,39 @@ const monthNow = () => new Date().toISOString().slice(0,7);
 ["viewMonth"].forEach(id=>$(id).value=monthNow());
 
 function save(){
-  localStorage.setItem("kpi_preparers_v3",JSON.stringify(preparers));
-  localStorage.setItem("kpi_leaders_v3",JSON.stringify(leaders));
-  localStorage.setItem("kpi_preparer_names_v1",JSON.stringify(preparerNames));
-activityLog = Array.isArray(activityLog) ? activityLog.slice(0, 500) : [];
-localStorage.setItem("kpi_activity_log_v1", JSON.stringify(activityLog));  localStorage.setItem("kpi_transfer_log_v1",JSON.stringify(transferLog));
+  try{
+    localStorage.setItem("kpi_preparers_v3",JSON.stringify(preparers));
+  }catch(err){
+    console.warn("Local storage skipped: kpi_preparers_v3", err);
+  }
+
+  try{
+    localStorage.setItem("kpi_leaders_v3",JSON.stringify(leaders));
+  }catch(err){
+    console.warn("Local storage skipped: kpi_leaders_v3", err);
+  }
+
+  try{
+    localStorage.setItem("kpi_preparer_names_v1",JSON.stringify(preparerNames));
+  }catch(err){
+    console.warn("Local storage skipped: kpi_preparer_names_v1", err);
+  }
+
+  activityLog = Array.isArray(activityLog) ? activityLog.slice(0, 500) : [];
+
+  try{
+    localStorage.setItem("kpi_activity_log_v1",JSON.stringify(activityLog));
+  }catch(err){
+    console.warn("Local storage skipped: kpi_activity_log_v1", err);
+  }
+
+  try{
+    localStorage.setItem("kpi_transfer_log_v1",JSON.stringify(transferLog));
+  }catch(err){
+    console.warn("Local storage skipped: kpi_transfer_log_v1", err);
+  }
+
+  // مهم: الحفظ على Supabase يتم حتى لو localStorage ممتلئ
   scheduleCloudSave();
 }
 

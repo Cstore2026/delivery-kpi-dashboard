@@ -1691,14 +1691,24 @@ function scheduleCloudSave(){
   CLOUD_SAVE_TIMER = setTimeout(saveCloudStateNow, 600);
 }
 function reloadStateFromLocalStorage(){
+  let cloudSnapshot = null;
+try{
+  cloudSnapshot = CLOUD_LAST_SYNC ? JSON.parse(CLOUD_LAST_SYNC) : null;
+}catch(_err){}
   USERS = JSON.parse(localStorage.getItem("kpi_users_v1") || "null") || structuredClone(DEFAULT_USERS);
   if(USERS["admin"]) delete USERS["admin"];
-  Object.keys(USERS || {}).forEach(u => ensureTeamLeaderPermissions(u));
-  BRANCH_BY_LEADER = JSON.parse(localStorage.getItem("kpi_branch_by_leader_v1") || "null") || structuredClone(DEFAULT_BRANCH_BY_LEADER);
-  LEADER_INTERNAL_NAMES = JSON.parse(localStorage.getItem("kpi_leader_internal_names_v1") || "{}");
+preparers = JSON.parse(
+  (cloudSnapshot && cloudSnapshot["kpi_preparers_v3"]) ||
+  localStorage.getItem("kpi_preparers_v3") ||
+  "[]"
+);
+
+leaders = JSON.parse(
+  (cloudSnapshot && cloudSnapshot["kpi_leaders_v3"]) ||
+  localStorage.getItem("kpi_leaders_v3") ||
+  "[]"
+);  LEADER_INTERNAL_NAMES = JSON.parse(localStorage.getItem("kpi_leader_internal_names_v1") || "{}");
   HIDDEN_BRANCHES = JSON.parse(localStorage.getItem("kpi_hidden_branches_v1") || "[]");
-  preparers = JSON.parse(localStorage.getItem("kpi_preparers_v3") || "[]");
-  leaders = JSON.parse(localStorage.getItem("kpi_leaders_v3") || "[]");
   preparerNames = JSON.parse(localStorage.getItem("kpi_preparer_names_v1") || "{}");
   activityLog = JSON.parse(localStorage.getItem("kpi_activity_log_v1") || "[]");
   transferLog = JSON.parse(localStorage.getItem("kpi_transfer_log_v1") || "[]");

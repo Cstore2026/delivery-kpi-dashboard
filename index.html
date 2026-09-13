@@ -1557,7 +1557,7 @@ async function saveCloudStateNow(){
   // FAIL CLOSED: never write to Supabase unless this page successfully loaded app_state first.
   if(!CLOUD_READY || !CLOUD_REMOTE_LOADED || !CLOUD_LAST_SYNC) return;
   try{
-    const value = JSON.stringify(collectCloudState());
+const value = JSON.stringify(collectLiveCloudState());
     if(value === CLOUD_LAST_SYNC) return;
 
     // Update the existing app_state row only. Never create/replace it after a failed load.
@@ -2224,7 +2224,11 @@ function addActivity(action, details){
     details
   });
   activityLog = activityLog.slice(0, 500);
+  try{
   localStorage.setItem("kpi_activity_log_v1", JSON.stringify(activityLog));
+}catch(err){
+  console.warn("Activity log local storage skipped", err);
+}
   scheduleCloudSave();
 }
 function num(v){return Number(v||0)}

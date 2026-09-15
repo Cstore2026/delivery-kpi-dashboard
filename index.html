@@ -1056,9 +1056,23 @@
                 <select id="transferLeaderName"><option value="تيم ليدر عباس">ابراهيم اكرم - تيم ليدر عباس</option><option value="تيم ليدر تريومف">سمير محمد - تيم ليدر تريومف</option><option value="تيم ليدر التجمع الاول">كريم فؤاد - تيم ليدر التجمع الاول</option><option value="تيم ليدر المعادي">فهمي عبد الفتاح - تيم ليدر المعادي</option><option value="تيم ليدر التجمع الخامس">محمد ابراهيم - تيم ليدر التجمع الخامس</option></select>
               </div>
               <div>
-                <label>الفرع الجديد</label>
-                <input id="transferLeaderNewBranch" placeholder="اكتب اسم الفرع الجديد">
-              </div>
+    <label>من الفرع</label>
+    <input id="transferLeaderOldBranch"
+           type="text"
+           placeholder="الفرع الحالي"
+           readonly>
+</div>
+
+<div>
+    <label>إلى الفرع</label>
+    <select id="transferLeaderNewBranch">
+        <option value="">اختر الفرع الجديد</option>
+        <option value="التجمع الأول">التجمع الأول</option>
+        <option value="التجمع الخامس">التجمع الخامس</option>
+        <option value="عباس">عباس</option>
+        <option value="المعادي">المعادي</option>
+    </select>
+</div>
               <div class="role-note">
                 سيتم تغيير الفرع الحالي فقط. كل تقييمات التيم ليدر السابقة والجديدة ستظل محفوظة معه كما هي.
               </div>
@@ -2208,9 +2222,18 @@ function leaderDisplayName(leaderName, branchContext=""){
   if(!s) return "";
 
   // 1) الاسم الداخلي المحدد من السوبر فايزر له الأولوية
-  const direct = rawLeaderDisplayName(s);
-  if(direct) return direct;
+const direct = rawLeaderDisplayName(s);
+if(direct){
+    const currentBranch = safeSingleBranch(
+        branchContext || getBranchFromLeader(s)
+    );
 
+    if(currentBranch){
+        return `تيم ليدر ${currentBranch} - ${direct}`;
+    }
+
+    return direct;
+}
   // 2) لو الاسم قديم بالشكل: تيم ليدر + فرع، متعرضش فرع قديم مع فرع حالي مختلف
   const oldBranch = getBranchFromLeader(s);
   if(isGenericLeaderName(s) && ctxBranch && oldBranch && oldBranch !== ctxBranch){
@@ -2268,8 +2291,7 @@ function currentLeaderOptionLabel(leaderName){
   const branch = safeSingleBranch(getBranchFromLeader(leaderName));
   const display = leaderDisplayName(leaderName, branch);
   const roleLabel = currentLeaderRoleLabel(leaderName);
-  return display && display !== roleLabel ? `${roleLabel} - ${display}` : (display || roleLabel);
-}
+return display || roleLabel;}
 let currentRole = "";
 let editMode = null;
 let editRecordId = null;
@@ -2741,7 +2763,18 @@ function renderTeamLeaderControls(){
     if($("manageLeader")) $("manageLeader").value = currentUser;
   }
 }
+function updateTransferLeaderOldBranch(){
+    const leaderSelect = $("transferLeaderName");
+    const oldBranchInput = $("transferLeaderOldBranch");
 
+    if(!leaderSelect || !oldBranchInput) return;
+
+    const leader = leaderSelect.value;
+    oldBranchInput.value = leader ? (getBranchFromLeader(leader) || "") : "";
+}
+
+$("transferLeaderName")?.addEventListener("change", updateTransferLeaderOldBranch);
+$("transferLeaderName")?.addEventListener("input", updateTransferLeaderOldBranch);
 function renderTransferControls(){
   if(!$("transferPreparerFromLeader")) return;
 
@@ -2757,6 +2790,7 @@ function renderTransferControls(){
   });
 
   renderTransferPreparerNames();
+updateTransferLeaderOldBranch();
 }
 
 

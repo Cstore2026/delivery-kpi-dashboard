@@ -1356,8 +1356,10 @@ async function renderOnlineBackups(){
       return `<tr>
         <td>${index + 1}</td>
         <td>${esc(dt)}</td>
-        <td><button class="btn light" type="button" onclick="restoreOnlineBackup('${String(r.key || "").replace(/'/g,"\\'")}')">استعادة النسخة</button></td>
-      </tr>`;
+<td>
+  <button class="btn light" type="button" onclick="restoreOnlineBackup('${String(r.key || "").replace(/'/g,"\\'")}')">استعادة النسخة</button>
+  <button class="btn light" type="button" onclick="deleteOnlineBackup('${String(r.key || "").replace(/'/g,"\\'")}')">حذف النسخة</button>
+</td>      </tr>`;
     });
     tableBox.innerHTML = table(["#","تاريخ النسخة","إجراء"], bodyRows);
     setOnlineBackupStatus(`تم العثور على ${rows.length} نسخة Backup Online.`);
@@ -1366,6 +1368,51 @@ async function renderOnlineBackups(){
     tableBox.innerHTML = "";
     setOnlineBackupStatus("تعذر تحميل قائمة النسخ من Supabase.");
   }
+}
+  async function deleteOnlineBackup(key){
+    if(currentRole !== "supervisor"){
+        alert("حذف النسخ الاحتياطية متاح لسوبر فايزر فقط.");
+        return;
+    }
+
+    if(!key || !String(key).startsWith(ONLINE_BACKUP_PREFIX)) return;
+
+    if(OFFLINE_SNAPSHOT_MODE || !CLOUD_READY || !CLOUD_REMOTE_LOADED){
+        alert("لا يمكن حذف النسخة الآن. تأكد من الاتصال بـ Supabase.");
+        return;
+    }
+
+    if(!confirm("هل أنت متأكد من حذف هذه النسخة الاحتياطية؟\nلا يمكن التراجع عن الحذف.")){
+        return;
+    }
+
+    try{
+        setOnlineBackupStatus("جاري حذف النسخة...");
+
+        const res = await fetch(
+            `${SUPABASE_URL}/rest/v1/kpi_store?key=eq.${encodeURIComponent(key)}`,
+            {
+                method: "DELETE",
+                headers: cloudHeaders({"Prefer":"return=representation"})
+            }
+        );
+
+        if(!res.ok) throw new Error(await res.text());
+
+        const deletedRows = await res.json();
+
+        if(!Array.isArray(deletedRows) || deletedRows.length !== 1){
+            throw new Error("Backup was not deleted exactly once");
+        }
+
+        setOnlineBackupStatus("تم حذف النسخة بنجاح.");
+        await renderOnlineBackups();
+
+    }catch(err){
+        console.warn("Online backup delete failed", err);
+        setOnlineBackupStatus("تعذر حذف النسخة.");
+        alert("حدث خطأ أثناء حذف النسخة الاحتياطية.");
+    }
 }
 async function restoreOnlineBackup(key){
   if(currentRole !== "supervisor"){
